@@ -1,11 +1,11 @@
 'use strict';
 
 const { loggerAdmin } = require('../../config/logger');
-const toolsLib = require('../../utils/toolsLib');
+const toolsLib = require('hollaex-tools-lib');
 const { cloneDeep, pick } = require('lodash');
 const { all } = require('bluebird');
 const { USER_NOT_FOUND } = require('../../messages');
-const { sendEmail } = require('../../mail');
+const { sendEmail, testSendSMTPEmail } = require('../../mail');
 const { MAILTYPE } = require('../../mail/strings');
 const { errorMessageConverter } = require('../../utils/conversion');
 const { isDate } = require('moment');
@@ -86,7 +86,7 @@ const putAdminKit = (req, res) => {
 	if (data.kit) {
 		if (data.kit.setup_completed) {
 			loggerAdmin.error(req.uuid, 'controllers/admin/putAdminKit', 'Cannot update setup_completed value through this endpoint');
-			return res.status(400).json({ message: 'Cannot update setup_completed value through this endpoint'});
+			return res.status(400).json({ message: 'Cannot update setup_completed value through this endpoint' });
 		}
 	}
 
@@ -805,13 +805,16 @@ const getExchangeGeneratedFees = (req, res) => {
 };
 
 const settleFees = (req, res) => {
+	const { user_id } = req.swagger.params;
 	loggerAdmin.verbose(
 		req.uuid,
 		'controllers/admin/settleFees auth',
-		req.auth
+		req.auth,
+		user_id.value
 	);
 
 	toolsLib.order.settleFees({
+		user_id: user_id.value,
 		additionalHeaders: {
 			'x-forwarded-for': req.headers['x-forwarded-for']
 		}
@@ -887,7 +890,7 @@ const mintAsset = (req, res) => {
 		.then((data) => {
 			loggerAdmin.info(
 				req.uuid,
-				'controllers/admin/mintAsset successful',
+				'controllers/admin/mintAsset successful'
 			);
 			return res.status(201).json(data);
 		})
@@ -956,7 +959,7 @@ const putMint = (req, res) => {
 		.then((data) => {
 			loggerAdmin.info(
 				req.uuid,
-				'controllers/admin/putMint successful',
+				'controllers/admin/putMint successful'
 			);
 			return res.json(data);
 		})
@@ -1028,7 +1031,7 @@ const burnAsset = (req, res) => {
 		.then((data) => {
 			loggerAdmin.info(
 				req.uuid,
-				'controllers/admin/burnAsset successful',
+				'controllers/admin/burnAsset successful'
 			);
 			return res.status(201).json(data);
 		})
@@ -1097,7 +1100,7 @@ const putBurn = (req, res) => {
 		.then((data) => {
 			loggerAdmin.info(
 				req.uuid,
-				'controllers/admin/putBurn successful',
+				'controllers/admin/putBurn successful'
 			);
 			return res.json(data);
 		})
@@ -1138,6 +1141,65 @@ const postKitUserMeta = (req, res) => {
 			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
 		});
 };
+
+const getEmail = (req, res) => {
+	loggerAdmin.verbose(req.uuid, 'controllers/admin/getEmail', req.auth.sub);
+	const { language, type} = req.swagger.params;
+	try {
+		const data = cloneDeep({
+			email: toolsLib.getEmail()
+		});
+
+		return res.json(data["email"][language.value][type.value.toUpperCase()]);
+	} catch (err) {
+		loggerAdmin.error(req.uuid, 'controllers/admin/getEmail', err.message);
+		return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+	}
+}
+
+
+const putEmail = (req, res) => {
+	loggerAdmin.verbose(req.uuid, 'controllers/admin/putEmail', req.auth.sub);
+
+	const { language, type, html, title } = req.swagger.params.data.value;
+	const data = cloneDeep({
+		email: toolsLib.getEmail()
+	});
+	data["email"][language][type.toUpperCase()] = {html, title};
+	toolsLib.updateEmail(data)
+		.then(() => {
+			return res.status(201).json({ message: 'Success' });
+
+		})
+		.catch((err) => {
+			loggerAdmin.error(req.uuid, 'controllers/admin/putEmail', err.message);
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+		});
+
+}
+
+const getEmailTypes = (req, res) => {
+	loggerAdmin.verbose(req.uuid, 'controllers/admin/getEmailTypes', req.auth.sub);
+	const LANGUAGE_DEFAULT = 'en';
+	try {
+		const data = cloneDeep({
+			email: toolsLib.getEmail()
+		});
+
+		let arrMailType = Object.keys(data["email"][LANGUAGE_DEFAULT]);
+		arrMailType.sort((a, b) => {
+			if(a < b) { return -1; }
+			if(a > b) { return 1; }
+			return 0;
+		})
+
+		return res.status(201).json(arrMailType);
+
+	} catch (err) {
+		loggerAdmin.error(req.uuid, 'controllers/admin/getEmailTypes', err.message);
+		return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+	}
+}
 
 const putKitUserMeta = (req, res) => {
 	loggerAdmin.verbose(req.uuid, 'controllers/admin/putKitUserMeta', req.auth.sub);
@@ -1755,7 +1817,8 @@ const putUserInfo = (req, res) => {
 			'nationality',
 			'phone_number',
 			'dob',
-			'address'
+			'address',
+			'id_data'
 		]
 	);
 
@@ -1775,6 +1838,35 @@ const putUserInfo = (req, res) => {
 			loggerAdmin.error(
 				req.uuid,
 				'controllers/admin/putUserInfo err',
+				err.message
+			);
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+		});
+};
+
+const emailConfigTest = (req, res) => {
+	loggerAdmin.verbose(
+		req.uuid,
+		'controllers/admin/emailConfigTest auth',
+		req.auth
+	);
+
+	const { receiver, smtp } = req.swagger.params.data.value;
+
+	testSendSMTPEmail(receiver, smtp)
+		.then(() => {
+			loggerAdmin.error(
+				req.uuid,
+				'controllers/admin/emailConfigTest',
+				'Email sent successfully'
+			);
+
+			return res.status(201).json({ message: 'Email sent successfully' });
+		})
+		.catch((err) => {
+			loggerAdmin.error(
+				req.uuid,
+				'controllers/admin/emailConfigTest err',
 				err.message
 			);
 			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
@@ -1824,5 +1916,9 @@ module.exports = {
 	getNetworkCoins,
 	getNetworkPairs,
 	updateExchange,
-	putUserInfo
+	putUserInfo,
+	getEmail,
+	putEmail,
+	emailConfigTest,
+	getEmailTypes
 };

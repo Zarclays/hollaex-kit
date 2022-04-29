@@ -3,7 +3,7 @@
 const packageJson = require('../../package.json');
 const { API_HOST, HOLLAEX_NETWORK_ENDPOINT } = require('../../constants');
 const { loggerPublic } = require('../../config/logger');
-const toolsLib = require('../../utils/toolsLib');
+const toolsLib = require('hollaex-tools-lib');
 const { errorMessageConverter } = require('../../utils/conversion');
 
 const getHealth = (req, res) => {
@@ -26,6 +26,7 @@ const getConstants = (req, res) => {
 		return res.json({
 			coins: toolsLib.getKitCoinsConfig(),
 			pairs: toolsLib.getKitPairsConfig(),
+			broker: toolsLib.getBrokerDeals(),
 			network: HOLLAEX_NETWORK_ENDPOINT
 		});
 	} catch (err) {

@@ -32,13 +32,23 @@ import {
 	SET_HELPDESK_INFO,
 	SET_INJECTED_VALUES,
 	SET_INJECTED_HTML,
+	SET_CONTRACTS,
+	CHANGE_PAIR,
+	SET_ACTIVE_ORDERS_MARKET,
+	SET_RECENT_TRADES_MARKETS,
+	SET_TRADE_TAB,
+	SET_BROKER,
 } from '../actions/appActions';
 import { THEME_DEFAULT } from '../config/constants';
 import { getLanguage } from '../utils/string';
 import { getTheme } from '../utils/theme';
 import { unique } from 'utils/data';
 import { getFavourites, setFavourites } from 'utils/favourites';
-import { generateGlobalId, generateDynamicTarget } from 'utils/id';
+import {
+	globalize,
+	generateDynamicTarget,
+	generateFiatWalletTarget,
+} from 'utils/id';
 import { mapPluginsTypeToName } from 'utils/plugin';
 
 const EMPTY_NOTIFICATION = {
@@ -72,6 +82,8 @@ const INITIAL_STATE = {
 	language: getLanguage(),
 	pairs: {},
 	pair: '',
+	activeOrdersMarket: '',
+	recentTradesMarket: '',
 	tickers: {},
 	orderLimits: {},
 	coins: {
@@ -166,6 +178,9 @@ const INITIAL_STATE = {
 	injected_values: [],
 	injected_html: {},
 	plugins_injected_html: {},
+	contracts: {},
+	tradeTab: 0,
+	broker: {},
 };
 
 const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
@@ -180,15 +195,32 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 				...state,
 				pairs: payload.pairs,
 			};
-		case 'CHANGE_PAIR':
+		case CHANGE_PAIR:
 			return {
 				...state,
 				pair: payload.pair,
+				activeOrdersMarket: payload.pair,
+				recentTradesMarket: payload.pair,
+			};
+		case SET_ACTIVE_ORDERS_MARKET:
+			return {
+				...state,
+				activeOrdersMarket: payload.activeOrdersMarket,
+			};
+		case SET_RECENT_TRADES_MARKETS:
+			return {
+				...state,
+				recentTradesMarket: payload.recentTradesMarket,
 			};
 		case SET_CURRENCIES:
 			return {
 				...state,
 				coins: payload.coins,
+			};
+		case SET_BROKER:
+			return {
+				...state,
+				broker: payload.broker,
 			};
 		case SET_NOTIFICATION: {
 			const newNotification =
@@ -419,11 +451,11 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 			const remoteRoutes = [];
 			allWebViews.forEach(({ meta, name }) => {
 				if (meta && meta.is_page) {
-					const { icon_id, string_id, ...rest } = meta;
+					const { icon, string, ...rest } = meta;
 					remoteRoutes.push({
 						target: generateDynamicTarget(name, 'page'),
-						icon_id: generateGlobalId(name)(icon_id),
-						string_id: generateGlobalId(name)(string_id),
+						icon_id: globalize(name)(icon),
+						string_id: globalize(name)(string),
 						...rest,
 					});
 				}
@@ -447,9 +479,19 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 				if (staticTarget) {
 					target = staticTarget;
 				} else if (meta) {
-					const { is_page } = meta;
+					const {
+						is_page,
+						is_verification_tab,
+						is_wallet,
+						type,
+						currency,
+					} = meta;
 					if (is_page) {
 						target = generateDynamicTarget(name, 'page');
+					} else if (is_verification_tab && type) {
+						target = generateDynamicTarget(name, 'verification', type);
+					} else if (is_wallet && type && currency) {
+						target = generateFiatWalletTarget(type, currency);
 					}
 				}
 				if (!CLUSTERED_WEB_VIEWS[target]) {
@@ -544,6 +586,18 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 			return {
 				...state,
 				injected_html: payload,
+			};
+		}
+		case SET_CONTRACTS: {
+			return {
+				...state,
+				contracts: payload,
+			};
+		}
+		case SET_TRADE_TAB: {
+			return {
+				...state,
+				tradeTab: payload,
 			};
 		}
 		default:

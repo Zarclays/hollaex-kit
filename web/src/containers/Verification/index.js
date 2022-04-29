@@ -52,7 +52,7 @@ import { required, maxLength } from 'components/Form/validations';
 import { getCountry } from 'containers/Verification/utils';
 import { getFormatTimestamp } from 'utils/utils';
 import { COUNTRIES_OPTIONS } from 'utils/countries';
-
+import { verificationTabsSelector } from './selector';
 // const CONTENT_CLASS =
 // 	'd-flex justify-content-center align-items-center f-1 flex-column verification_content-wrapper';
 
@@ -73,6 +73,25 @@ class Verification extends Component {
 			this.setUserData(this.props.user);
 		}
 		this.getBankData();
+		if (window.location.search && window.location.search.includes('email')) {
+			this.setState({ activeTab: 0 });
+		} else if (
+			window.location.search &&
+			window.location.search.includes('phone')
+		) {
+			this.setState({ activeTab: 1 });
+		} else if (
+			window.location.search &&
+			window.location.search.includes('identity')
+		) {
+			this.setState({ activeTab: 2 });
+		} else if (
+			window.location.search &&
+			window.location.search.includes('banks')
+		) {
+			this.setState({ activeTab: 3 });
+		}
+		this.openCurrentTab();
 	}
 
 	UNSAFE_componentWillReceiveProps(nextProps) {
@@ -103,6 +122,30 @@ class Verification extends Component {
 			);
 		}
 	}
+
+	componentDidUpdate(prevProps, prevState) {
+		if (
+			JSON.stringify(prevState.activeTab) !==
+			JSON.stringify(this.state.activeTab)
+		) {
+			this.openCurrentTab();
+		}
+	}
+
+	openCurrentTab = () => {
+		let currentTab = '';
+		if (this.state.activeTab === 0) {
+			currentTab = 'email';
+		}
+		if (this.state.activeTab === 1) {
+			currentTab = 'phone';
+		} else if (this.state.activeTab === 2) {
+			currentTab = 'identity';
+		} else if (this.state.activeTab === 3) {
+			currentTab = 'banks';
+		}
+		this.props.router.push(`/verification?${currentTab}`);
+	};
 
 	getBankData = () => {
 		requestPlugin({ name: 'bank' })
@@ -148,8 +191,9 @@ class Verification extends Component {
 			router: {
 				location: { query: { initial_tab } = {} },
 			},
+			availableRemotePlugins,
 		} = this.props;
-		const availablePlugins = ['kyc', 'bank', 'sms'];
+		const availablePlugins = ['kyc', 'bank', 'sms', ...availableRemotePlugins];
 		let currentTabs = ['email'];
 		if (enabledPlugins.length) {
 			const temp = enabledPlugins.filter((val) =>
@@ -173,7 +217,15 @@ class Verification extends Component {
 		} else if (!phone_number && currentTabs.indexOf('sms') !== -1) {
 			activeTab = currentTabs.indexOf('sms');
 		}
-		return { activeTab, currentTabs };
+
+		const sortedNonDynamicTabs = currentTabs.filter((tab) =>
+			sortingArray.includes(tab)
+		);
+
+		return {
+			activeTab,
+			currentTabs: [...sortedNonDynamicTabs, ...availableRemotePlugins],
+		};
 	};
 
 	sendVerificationEmail = () => {
@@ -195,6 +247,66 @@ class Verification extends Component {
 					console.error(errors);
 				}
 			});
+	};
+
+	getRemoteTabUtils = () => {
+		const { remoteTabs, icons: ICONS } = this.props;
+		const tabUtils = {};
+		Object.entries(remoteTabs).forEach(
+			([
+				tab_key,
+				{
+					home: { string_id, icon_id, target },
+				},
+			]) => {
+				tabUtils[tab_key] = {
+					title: isMobile ? (
+						<CustomMobileTabs
+							title={STRINGS[string_id]}
+							icon={ICONS[icon_id]}
+						/>
+					) : (
+						<CustomTabs
+							stringId={string_id}
+							title={STRINGS[string_id]}
+							iconId={icon_id}
+							icon={ICONS[icon_id]}
+						/>
+					),
+					content: (
+						<SmartTarget
+							id={target}
+							handleBack={this.handleBack}
+							setActivePageContent={this.setActivePageContent}
+						/>
+					),
+				};
+			}
+		);
+		return tabUtils;
+	};
+
+	getRemoteTabPageContent = (activePage) => {
+		const { remoteTabs, openContactForm, availableRemotePlugins } = this.props;
+
+		if (availableRemotePlugins.includes(activePage)) {
+			const {
+				[activePage]: {
+					verification: { target },
+				},
+			} = remoteTabs;
+			return (
+				<SmartTarget
+					id={target}
+					openContactForm={openContactForm}
+					setActivePageContent={this.setActivePageContent}
+					handleBack={this.handleBack}
+					moveToNextStep={this.goNextTab}
+				/>
+			);
+		} else {
+			return <div>No content</div>;
+		}
 	};
 
 	updateTabs = (
@@ -348,6 +460,7 @@ class Verification extends Component {
 					/>
 				),
 			},
+			...this.getRemoteTabUtils(),
 		};
 		let tabs = [];
 		currentTabs.forEach((key) => {
@@ -409,7 +522,9 @@ class Verification extends Component {
 		this.setState({ activePage });
 	};
 
-	renderContent = (tabs, activeTab) => tabs[activeTab].content || <div>c</div>;
+	renderContent = (tabs, activeTab) => {
+		return tabs[activeTab].content || <div>c</div>;
+	};
 
 	renderPageContent = (tabProps) => {
 		const { activePage, activeTab, tabs, user, bankMeta } = this.state;
@@ -479,7 +594,7 @@ class Verification extends Component {
 					/>
 				);
 			default:
-				return;
+				return this.getRemoteTabPageContent(activePage);
 		}
 	};
 
@@ -589,14 +704,21 @@ class Verification extends Component {
 	}
 }
 
-const mapStateToProps = (state) => ({
-	activeLanguage: state.app.language,
-	// token: state.auth.token,
-	activeTheme: state.app.theme,
-	user: state.user,
-	enabledPlugins: state.app.enabledPlugins,
-	constants: state.app.constants,
-});
+const mapStateToProps = (state) => {
+	const remoteTabs = verificationTabsSelector(state);
+	const availableRemotePlugins = Object.keys(remoteTabs);
+
+	return {
+		activeLanguage: state.app.language,
+		// token: state.auth.token,
+		activeTheme: state.app.theme,
+		user: state.user,
+		enabledPlugins: state.app.enabledPlugins,
+		constants: state.app.constants,
+		remoteTabs,
+		availableRemotePlugins,
+	};
+};
 
 const mapDispatchToProps = (dispatch) => ({
 	setMe: bindActionCreators(setMe, dispatch),

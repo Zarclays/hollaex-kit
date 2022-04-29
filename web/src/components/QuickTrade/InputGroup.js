@@ -38,7 +38,9 @@ class InputGroup extends React.PureComponent {
 
 		if (isNumeric(newValue) || isFloat(newValue)) {
 			const value = math.round(newValue, decimalPoint);
-			if (value) {
+			if (isFloat(newValue) && `${newValue}`.endsWith('0')) {
+				onInputChange(newValue);
+			} else if (value) {
 				onInputChange(value);
 			} else {
 				onInputChange(0);
@@ -49,14 +51,36 @@ class InputGroup extends React.PureComponent {
 	};
 
 	renderErrorMessage = (value) => {
-		const { limits, forwardError, availableBalance } = this.props;
+		const {
+			limits,
+			forwardError,
+			availableBalance,
+			estimatedPrice,
+			selectValue,
+			pair,
+			isExistBroker,
+			isShowChartDetails,
+		} = this.props;
+		const keydata = pair.split('-');
 		let error = '';
 		if (!value) {
 			error = '';
+		} else if (
+			keydata[0] === selectValue &&
+			limits &&
+			minValue(limits.MIN)(value)
+		) {
+			error = minValue(limits.MIN)(value);
+		} else if (
+			keydata[0] === selectValue &&
+			limits &&
+			maxValue(limits.MAX)(value)
+		) {
+			error = maxValue(limits.MAX)(value);
+		} else if (!estimatedPrice && !isExistBroker && isShowChartDetails) {
+			error = STRINGS['QUICK_TRADE_ORDER_CAN_NOT_BE_FILLED'];
 		} else if (availableBalance) {
 			error = maxValue(availableBalance)(value);
-		} else {
-			error = minValue(limits.MIN)(value) || maxValue(limits.MAX)(value);
 		}
 		forwardError(error);
 		return error;
@@ -81,7 +105,7 @@ class InputGroup extends React.PureComponent {
 				<label className="bold caps-first">
 					<EditWrapper stringId={stringId}>{name}</EditWrapper>
 				</label>
-				<div className={isMobile ? "w-100" : ""}>
+				<div className={isMobile ? 'w-100' : ''}>
 					<Group compact className="input-group__container">
 						<Select
 							open={isOpen}
@@ -142,7 +166,7 @@ class InputGroup extends React.PureComponent {
 							placeholder={STRINGS['AMOUNT']}
 							style={isOpen ? { display: 'none' } : { width: '67%' }}
 							className="input-group__input"
-							value={inputValue}
+							value={`${inputValue}`}
 							onChange={this.onChangeEvent}
 							bordered={false}
 							step={limits.MIN}
@@ -151,15 +175,13 @@ class InputGroup extends React.PureComponent {
 							autoFocus={autoFocus}
 						/>
 					</Group>
-					{translateError(this.renderErrorMessage(inputValue))
-						?
+					{translateError(this.renderErrorMessage(inputValue)) && (
 						<FieldError
 							error={translateError(this.renderErrorMessage(inputValue))}
 							displayError={true}
 							className="input-group__error-wrapper"
 						/>
-						: null
-					}
+					)}
 				</div>
 			</div>
 		);
