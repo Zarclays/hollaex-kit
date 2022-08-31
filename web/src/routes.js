@@ -55,6 +55,7 @@ import {
 	Roles,
 	Resources,
 	Pairs,
+	Fiatmarkets,
 } from './containers';
 import chat from './containers/Admin/Chat';
 
@@ -83,6 +84,13 @@ import { STAKING_INDEX_COIN, isStakingAvailable } from 'config/contracts';
 
 ReactGA.initialize('UA-154626247-1'); // Google analytics. Set your own Google Analytics values
 browserHistory.listen((location) => {
+	if (window) {
+		window.scroll({
+			top: 0,
+			left: 0,
+			behavior: 'smooth',
+		});
+	}
 	ReactGA.set({ page: window.location.pathname });
 	ReactGA.pageview(window.location.pathname);
 });
@@ -420,6 +428,11 @@ export const generateRoutes = (routes = []) => {
 					path="/admin/general"
 					name="Admin General"
 					component={withAdminProps(General, 'general')}
+				/>
+				<Route
+					path="/admin/fiat"
+					name="Admin Fiat"
+					component={withAdminProps(Fiatmarkets, 'fiat')}
 				/>
 				<Route
 					path="/admin/tiers"

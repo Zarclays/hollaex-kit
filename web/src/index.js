@@ -36,6 +36,7 @@ import {
 	setDefaultLogo,
 	consoleKitInfo,
 	getContracts,
+	modifySections,
 } from 'utils/initialize';
 
 import { getKitData } from 'actions/operatorActions';
@@ -55,6 +56,9 @@ import {
 	changePair,
 	setPairs,
 	setCurrencies,
+	setUserPayments,
+	setOnramp,
+	setOfframp,
 	setOrderLimits,
 	setHelpdeskInfo,
 	setContracts,
@@ -89,28 +93,29 @@ const getConfigs = async () => {
 		injected_values = [],
 		injected_html = {},
 		captcha = {},
+		defaults = {},
 	} = kitData;
 
 	store.dispatch(setConfig(kitData));
-	if (kitData.defaults) {
+	if (defaults) {
 		const themeColor = localStorage.getItem('theme');
 		const isThemeValid = hasTheme(themeColor, kitData.color);
 		const language = localStorage.getItem(LANGUAGE_KEY);
 
-		if (kitData.defaults.theme && (!themeColor || !isThemeValid)) {
-			store.dispatch(changeTheme(kitData.defaults.theme));
-			localStorage.setItem('theme', kitData.defaults.theme);
+		if (defaults.theme && (!themeColor || !isThemeValid)) {
+			store.dispatch(changeTheme(defaults.theme));
+			localStorage.setItem('theme', defaults.theme);
 		}
 
-		if (!language && kitData.defaults.language) {
-			store.dispatch(setLanguage(kitData.defaults.language));
+		if (!language && defaults.language) {
+			store.dispatch(setLanguage(defaults.language));
 		}
 	}
 	if (kitData.info) {
 		store.dispatch(setInfo({ ...kitData.info }));
 	}
 
-	kitData['sections'] = sections;
+	kitData['sections'] = modifySections(sections);
 
 	const promises = {};
 	Object.keys(remoteVersions).forEach((key) => {
@@ -147,9 +152,12 @@ const getConfigs = async () => {
 		store.dispatch(changePair(initialPair));
 	}
 
+	store.dispatch(setCurrencies(constants.coins));
+	store.dispatch(setUserPayments(kitData.user_payments));
+	store.dispatch(setOnramp(kitData.onramp));
+	store.dispatch(setOfframp(kitData.offramp));
 	store.dispatch(setPairs(constants.pairs));
 	store.dispatch(setPairsData(constants.pairs));
-	store.dispatch(setCurrencies(constants.coins));
 	store.dispatch(setContracts(getContracts(constants.coins)));
 	store.dispatch(setBroker(constants.broker));
 
@@ -193,6 +201,8 @@ const getConfigs = async () => {
 	const appConfigs = merge({}, defaultConfig, remoteConfigs, {
 		coin_icons,
 		captcha,
+		valid_languages,
+		defaults,
 	});
 
 	const {

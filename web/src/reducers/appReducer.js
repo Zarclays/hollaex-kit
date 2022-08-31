@@ -16,10 +16,12 @@ import {
 	SET_ORDER_LIMITS,
 	SET_TICKER_FROM_TRADE,
 	SET_CURRENCIES,
+	SET_USER_PAYMENTS,
+	SET_ONRAMP,
+	SET_OFFRAMP,
 	SET_CONFIG,
 	SET_PLUGINS,
 	SET_INFO,
-	SET_WAVE_AUCTION,
 	SET_PLUGINS_REQUEST,
 	SET_PLUGINS_SUCCESS,
 	SET_PLUGINS_FAILURE,
@@ -50,6 +52,7 @@ import {
 	generateFiatWalletTarget,
 } from 'utils/id';
 import { mapPluginsTypeToName } from 'utils/plugin';
+import { modifyCoinsData, modifyPairsData } from 'utils/reducer';
 
 const EMPTY_NOTIFICATION = {
 	type: '',
@@ -161,7 +164,6 @@ const INITIAL_STATE = {
 	constants: {},
 	config_level: {},
 	info: { is_trial: false, active: true, status: true },
-	wave: [],
 	enabledPlugins: [],
 	plugins: [],
 	pluginNames: {},
@@ -181,6 +183,9 @@ const INITIAL_STATE = {
 	contracts: {},
 	tradeTab: 0,
 	broker: {},
+	user_payments: {},
+	onramp: {},
+	offramp: {},
 };
 
 const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
@@ -193,7 +198,7 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 		case SET_PAIRS:
 			return {
 				...state,
-				pairs: payload.pairs,
+				pairs: modifyPairsData(payload.pairs, { ...state.coins }),
 			};
 		case CHANGE_PAIR:
 			return {
@@ -215,7 +220,22 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 		case SET_CURRENCIES:
 			return {
 				...state,
-				coins: payload.coins,
+				coins: modifyCoinsData(payload.coins),
+			};
+		case SET_USER_PAYMENTS:
+			return {
+				...state,
+				user_payments: payload.user_payments,
+			};
+		case SET_ONRAMP:
+			return {
+				...state,
+				onramp: payload.onramp,
+			};
+		case SET_OFFRAMP:
+			return {
+				...state,
+				offramp: payload.offramp,
 			};
 		case SET_BROKER:
 			return {
@@ -483,6 +503,7 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 						is_page,
 						is_verification_tab,
 						is_wallet,
+						is_ultimate_fiat,
 						type,
 						currency,
 					} = meta;
@@ -492,6 +513,8 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 						target = generateDynamicTarget(name, 'verification', type);
 					} else if (is_wallet && type && currency) {
 						target = generateFiatWalletTarget(type, currency);
+					} else if (is_ultimate_fiat && type) {
+						target = generateDynamicTarget(name, 'ultimate_fiat', type);
 					}
 				}
 				if (!CLUSTERED_WEB_VIEWS[target]) {
@@ -526,11 +549,6 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 			return {
 				...state,
 				info: payload.info,
-			};
-		case SET_WAVE_AUCTION:
-			return {
-				...state,
-				wave: payload.data,
 			};
 		case SET_PLUGINS_REQUEST:
 			return {

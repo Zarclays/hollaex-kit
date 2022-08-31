@@ -60,12 +60,13 @@ export const RISK_PORTFOLIO_ORDER_WARING = 'RISK_PORTFOLIO_ORDER_WARING';
 export const RISKY_ORDER = 'RISKY_ORDER';
 export const LOGOUT_CONFORMATION = 'LOGOUT_CONFORMATION';
 export const SET_CURRENCIES = 'SET_CURRENCIES';
+export const SET_USER_PAYMENTS = 'SET_USER_PAYMENTS';
+export const SET_ONRAMP = 'SET_ONRAMP';
+export const SET_OFFRAMP = 'SET_OFFRAMP';
 export const SET_BROKER = 'SET_BROKER';
 export const SET_CONFIG = 'SET_CONFIG';
 export const SET_PLUGINS = 'SET_PLUGINS';
-export const REQUEST_XHT_ACCESS = 'REQUEST_XHT_ACCESS';
 export const SET_INFO = 'SET_INFO';
-export const SET_WAVE_AUCTION = 'SET_WAVE_AUCTION';
 export const SET_PLUGINS_REQUEST = 'SET_PLUGINS_REQUEST';
 export const SET_PLUGINS_SUCCESS = 'SET_PLUGINS_SUCCESS';
 export const SET_PLUGINS_FAILURE = 'SET_PLUGINS_FAILURE';
@@ -285,6 +286,27 @@ export const setCurrencies = (coins) => ({
 	},
 });
 
+export const setUserPayments = (user_payments = {}) => ({
+	type: SET_USER_PAYMENTS,
+	payload: {
+		user_payments,
+	},
+});
+
+export const setOnramp = (onramp = {}) => ({
+	type: SET_ONRAMP,
+	payload: {
+		onramp,
+	},
+});
+
+export const setOfframp = (offramp = {}) => ({
+	type: SET_OFFRAMP,
+	payload: {
+		offramp,
+	},
+});
+
 export const setBroker = (broker) => ({
 	type: SET_BROKER,
 	payload: {
@@ -390,19 +412,6 @@ export const getExchangeInfo = () => {
 						payload: { info: { ...res.data.info } },
 					});
 				}
-			}
-		});
-	};
-};
-
-export const getWaveAuction = () => {
-	return (dispatch) => {
-		axios.get('/wave').then((res) => {
-			if (res && res.data && res.data.data) {
-				dispatch({
-					type: SET_WAVE_AUCTION,
-					payload: { data: res.data.data },
-				});
 			}
 		});
 	};
