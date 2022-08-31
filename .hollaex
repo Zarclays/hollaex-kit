@@ -1,1 +1,3 @@
 HOLLAEX_CONFIGMAP_NETWORK_URL=https:\/\/api.hollaex.network
+ENVIRONMENT_HOLLAEX_KIT_NETWORK=mainnet
+

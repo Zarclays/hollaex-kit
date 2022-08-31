@@ -60,6 +60,10 @@ templates/kubernetes/config/*
 .DS_Store
 
 .token
+<<<<<<< HEAD
 backups
 
 settings/secret
+=======
+backups
+>>>>>>> 4d27137947ef9e89fb300a9bffa0215e91515dec
