@@ -1,13 +1,5 @@
 {
 	"tr": {
-		"DOC_REJECTED": {
-			"html": "<div><p>Sayın ${email} </p><p>Maalesef, yüklediğiniz KYC dökümanları reddedildi.<br>Belgelerinizin reddedilme sebepleri aşağıda listelenmiştir.<br></p><div><ul>${doc_information}</ul></div><p>Eğer, belgelerinizin reddedilme sebeplerinde bir hata olduğunu düşünüyorsanız, lütfen bu e-posta adresine yanıt veriniz.<br>Eğer bir hata yoksa, tüm geçerli dökümanlarınızı tekrar yüklemeniz gerekmektedir.</p><p> Regards<br> ${api_name} takımı </p</div>",
-			"title": "KYC Belgeleri Reddedildi"
-		},
-		"DOC_VERIFIED": {
-			"html": "<div><p>Sayın ${email} </p><p>Yüklediğiniz KYC belgeleriniz onaylandı.<br>Artık, kimlik onayı isteyen tüm borsa seçeneklerine erişiminiz açılmıştır.</p><ul>${doc_information}</ul><p>Onaylanan dökümanlarınızı görüntülemek için, lütfen <a href=\"${link}\" target=\"_blank\"> onay sayfanızı ziyaret ediniz.</a></p><p> İyi dileklerimizle<br> ${api_name} takımı </p></div>",
-			"title": "KYC Belgeleri Onaylandı"
-		},
 		"CONFIRM_EMAIL": {
 			"html": "<div><p><p>Sayın ${name} </p></p><p>Hesap güvenliğinizin kontrolünü gerektiren bir istekte bulundunuz. Bu işlemi gerçekleştirmek için, aşağıdaki kodla, bu işlemi onaylamanız gerekmektedir.<br /><p style=\"font-size: 1.2rem; text-align: center;\">${code}</p>Eğer bu isteği siz yapmadıysanız, acilen destek birimine raporlayınız ve şifrelerinizi değiştiriniz.</p><p> İyi dileklerimizle<br> ${api_name} takımı </p></div>",
 			"title": "Güvenlik Onayı"
@@ -107,6 +99,14 @@
 		"WITHDRAWAL_COMPLETED": {
 			"html": "<div><p> Sayın ${name} </p><p> ${amount} ${currency} için çekiminiz tamamlanmıştır.</p><p>Miktar: ${amount} ${currency}<br />Ücret: ${fee} ${fee_coin}<br />Durum: ${status}<br />Adres: ${address}<br />İşlem ID: ${transaction_id}<br /><span id=\"network\">Ağ: ${network}</span><br /><ul>${explorers}</ul><p> İyi dileklerimizle<br> ${api_name} takımı </p></div>",
 			"title": "${currency} Çekimi Tamamlandı"
+		},
+		"DOC_REJECTED": {
+			"html": "<div><p>Sayın ${email} </p><p>Maalesef, yüklediğiniz KYC dökümanları reddedildi.<br>Belgelerinizin reddedilme sebepleri aşağıda listelenmiştir.<br></p><div><ul>${doc_information}</ul></div><p>Eğer, belgelerinizin reddedilme sebeplerinde bir hata olduğunu düşünüyorsanız, lütfen bu e-posta adresine yanıt veriniz.<br>Eğer bir hata yoksa, tüm geçerli dökümanlarınızı tekrar yüklemeniz gerekmektedir.</p><p> Regards<br> ${api_name} takımı </p</div>",
+			"title": "KYC Belgeleri Reddedildi"
+		},
+		"DOC_VERIFIED": {
+			"html": "<div><p>Sayın ${email} </p><p>Yüklediğiniz KYC belgeleriniz onaylandı.<br>Artık, kimlik onayı isteyen tüm borsa seçeneklerine erişiminiz açılmıştır.</p><ul>${doc_information}</ul><p>Onaylanan dökümanlarınızı görüntülemek için, lütfen <a href=\"${link}\" target=\"_blank\"> onay sayfanızı ziyaret ediniz.</a></p><p> İyi dileklerimizle<br> ${api_name} takımı </p></div>",
+			"title": "KYC Belgeleri Onaylandı"
 		}
 	}
 }

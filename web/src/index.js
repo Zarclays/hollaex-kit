@@ -62,8 +62,18 @@ import {
 	setOrderLimits,
 	setHelpdeskInfo,
 	setContracts,
+	setAllContracts,
 	setBroker,
+	setAdminSortData,
+	setAdminWalletSortData,
+	setAdminDigitalAssetsSortData,
+	setSortModeChange,
+	setSortModeVolume,
+	SORT,
+	WALLET_SORT,
+	DIGITAL_ASSETS_SORT,
 } from 'actions/appActions';
+// import { setPricesAndAsset } from 'actions/assetActions';
 import { hasTheme } from 'utils/theme';
 import { generateRCStrings } from 'utils/string';
 import { LANGUAGE_KEY } from './config/constants';
@@ -73,6 +83,13 @@ import {
 	IS_PLUGIN_DEV_MODE,
 } from 'utils/plugin';
 import { drawFavIcon } from 'helpers/vanilla';
+import { setupManifest } from 'helpers/manifest';
+import {
+	hideBooting,
+	showBooting,
+	setLoadingImage,
+	setLoadingStyle,
+} from 'helpers/boot';
 
 consoleKitInfo();
 consolePluginDevModeInfo();
@@ -83,7 +100,15 @@ const getConfigs = async () => {
 	localStorage.removeItem('initialized');
 	const kitData = await getKitData();
 	const {
-		meta: { versions: remoteVersions = {}, sections = {} } = {},
+		meta: {
+			versions: remoteVersions = {},
+			sections = {},
+			default_sort = SORT.CHANGE,
+			pinned_markets = [],
+			default_wallet_sort = WALLET_SORT.AMOUNT,
+			pinned_assets = [],
+			default_digital_assets_sort = DIGITAL_ASSETS_SORT.CHANGE,
+		} = {},
 		valid_languages = '',
 		info: { initialized },
 		setup_completed,
@@ -159,7 +184,9 @@ const getConfigs = async () => {
 	store.dispatch(setPairs(constants.pairs));
 	store.dispatch(setPairsData(constants.pairs));
 	store.dispatch(setContracts(getContracts(constants.coins)));
+	store.dispatch(setAllContracts(constants));
 	store.dispatch(setBroker(constants.broker));
+	// store.dispatch(setPricesAndAsset({}, constants.coins));
 
 	const orderLimits = {};
 	Object.keys(constants.pairs).forEach((pair) => {
@@ -187,16 +214,22 @@ const getConfigs = async () => {
 	store.dispatch(setHomePageSetting(home_page));
 	store.dispatch(setInjectedValues(injected_values));
 	store.dispatch(setInjectedHTML(injected_html));
+	store.dispatch(setAdminSortData({ pinned_markets, default_sort }));
+	store.dispatch(
+		setAdminWalletSortData({ pinned_assets, default_wallet_sort })
+	);
+	store.dispatch(
+		setAdminDigitalAssetsSortData({
+			pinned_assets,
+			default_digital_assets_sort,
+		})
+	);
 
-	const {
-		data: { data: plugins = [] } = { data: [] },
-	} = await requestPlugins();
-
-	const allPlugins = IS_PLUGIN_DEV_MODE ? await mergePlugins(plugins) : plugins;
-
-	store.dispatch(setPlugins(allPlugins));
-	store.dispatch(setWebViews(allPlugins));
-	store.dispatch(setHelpdeskInfo(allPlugins));
+	if (default_sort === SORT.VOL) {
+		store.dispatch(setSortModeVolume());
+	} else {
+		store.dispatch(setSortModeChange());
+	}
 
 	const appConfigs = merge({}, defaultConfig, remoteConfigs, {
 		coin_icons,
@@ -204,6 +237,27 @@ const getConfigs = async () => {
 		valid_languages,
 		defaults,
 	});
+
+	setLoadingStyle(appConfigs);
+	setLoadingImage(appConfigs);
+
+	try {
+		const {
+			data: { data: plugins = [] } = { data: [] },
+		} = await requestPlugins();
+
+		const allPlugins = IS_PLUGIN_DEV_MODE
+			? await mergePlugins(plugins)
+			: plugins;
+
+		store.dispatch(setPlugins(allPlugins));
+		store.dispatch(setWebViews(allPlugins));
+		store.dispatch(setHelpdeskInfo(allPlugins));
+	} catch (err) {
+		console.error(err);
+		showBooting();
+		throw err;
+	}
 
 	const {
 		app: { plugins_injected_html },
@@ -229,11 +283,16 @@ const bootstrapApp = (
 	drawFavIcon(EXCHANGE_FAV_ICON);
 	// window.appConfig = { ...appConfig }
 	const {
-		app: { remoteRoutes, plugins },
+		app: {
+			remoteRoutes,
+			plugins,
+			constants: { api_name: name },
+		},
 	} = store.getState();
 
 	const RCStrings = generateRCStrings(plugins);
 	const mergedStrings = merge({}, RCStrings, appConfig.strings);
+	setupManifest({ name, short_name: name });
 
 	initializeStrings(mergedStrings);
 
@@ -266,6 +325,7 @@ const initialize = async () => {
 			injected_html,
 			plugins_injected_html
 		);
+		hideBooting();
 	} catch (err) {
 		console.error('Initialization failed!\n', err);
 		setTimeout(initialize, 3000);

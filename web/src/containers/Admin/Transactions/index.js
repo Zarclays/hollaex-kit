@@ -48,7 +48,7 @@ class Transactions extends Component {
 		isRemaining: true,
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		const { initialData, queryParams = {} } = this.props;
 		if (Object.keys(queryParams).length) {
 			this.requestDeposits(
@@ -267,7 +267,7 @@ class Transactions extends Component {
 			currentTablePage,
 			pageSize,
 		} = this.state;
-		const { showFilters, coins } = this.props;
+		const { showFilters, coins, icons } = this.props;
 
 		const {
 			hideUserColumn,
@@ -279,6 +279,7 @@ class Transactions extends Component {
 				<div>
 					{showFilters && (
 						<Filters
+							icons={icons}
 							coins={coins}
 							onChange={this.onChangeQuery}
 							onClick={this.onClickFilters}
@@ -331,7 +332,7 @@ class Transactions extends Component {
 									dismissingItem: dismissingItem && index === indexItem,
 								};
 							})}
-							expandedRowRender={renderRowContent}
+							expandedRowRender={(vals) => renderRowContent({ ...vals, coins })}
 							expandRowByClick={true}
 							rowKey={(data) => {
 								return data.id;

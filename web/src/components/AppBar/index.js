@@ -8,7 +8,7 @@ import { DEFAULT_URL } from 'config/constants';
 import MenuList from './MenuList';
 import { MobileBarWrapper } from '../';
 import { isLoggedIn } from '../../utils/token';
-import { getTickers, changeTheme } from '../../actions/appActions';
+import { getTickers, changeTheme, setLanguage } from '../../actions/appActions';
 import { updateUserSettings, setUserData } from '../../actions/userAction';
 import ThemeSwitcher from './ThemeSwitcher';
 import { EditWrapper, ButtonLink, Image } from 'components';
@@ -16,6 +16,7 @@ import withEdit from 'components/EditProvider/withEdit';
 import withConfig from 'components/ConfigProvider/withConfig';
 import AnnouncementList from './AnnouncementList';
 import STRINGS from 'config/localizedStrings';
+import LanguageSwitcher from './LanguageSwitcher';
 
 class AppBar extends Component {
 	state = {
@@ -146,7 +147,14 @@ class AppBar extends Component {
 	renderIcon = () => {
 		const { icons: ICONS, isEditMode } = this.props;
 		return (
-			<div className={classnames('app_bar-icon', 'text-uppercase', 'h-100')}>
+			<div
+				className={classnames(
+					'app_bar-icon',
+					'text-uppercase',
+					'h-100',
+					'ml-3'
+				)}
+			>
 				<div className="d-flex h-100">
 					<Link
 						to={DEFAULT_URL}
@@ -178,7 +186,7 @@ class AppBar extends Component {
 		return (
 			<div className={classnames('app_bar-icon', 'text-uppercase', 'h-100')}>
 				<div className="d-flex h-100">
-					<div className="'h-100'">
+					<div className="h-100">
 						<Image
 							iconId="EXCHANGE_LOGO"
 							icon={ICONS['EXCHANGE_LOGO']}
@@ -298,6 +306,13 @@ class AppBar extends Component {
 						className="d-flex app-bar-account justify-content-end"
 					>
 						<div className="d-flex app_bar-quicktrade-container">
+							<LanguageSwitcher
+								selected={this.props.activeLanguage}
+								valid_languages={this.props.constants.valid_languages}
+								toggle={this.props.changeLanguage}
+							/>
+						</div>
+						<div className="d-flex app_bar-quicktrade-container">
 							<ThemeSwitcher
 								selected={selected}
 								options={themeOptions}
@@ -337,6 +352,7 @@ const mapDispatchToProps = (dispatch) => ({
 	getTickers: bindActionCreators(getTickers, dispatch),
 	changeTheme: bindActionCreators(changeTheme, dispatch),
 	setUserData: bindActionCreators(setUserData, dispatch),
+	changeLanguage: bindActionCreators(setLanguage, dispatch),
 });
 
 export default connect(

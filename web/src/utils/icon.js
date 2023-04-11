@@ -2,9 +2,9 @@ import defaultIcons from 'config/icons';
 import merge from 'lodash.merge';
 import { generateGlobalId } from 'utils/id';
 
-const defaultIconsKey = 'dark';
+export const defaultIconsKey = 'dark';
 
-export const generateCoinIconId = (symbol) => `${symbol.toUpperCase()}_ICON`;
+export const generateCoinIconId = (symbol) => `${symbol?.toUpperCase()}_ICON`;
 
 export const getIconByKey = (
 	key,

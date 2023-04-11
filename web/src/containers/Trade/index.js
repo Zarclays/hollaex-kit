@@ -44,6 +44,8 @@ import STRINGS from 'config/localizedStrings';
 import { playBackgroundAudioNotification } from 'utils/utils';
 import withConfig from 'components/ConfigProvider/withConfig';
 import { getViewport } from 'helpers/viewPort';
+import strings from 'config/localizedStrings';
+import { formatCurrency } from 'utils';
 
 const GridLayout = WidthProvider(RGL);
 const TOPBARS_HEIGHT = mathjs.multiply(36, 2);
@@ -133,11 +135,11 @@ const defaultLayout = [
 	},
 ];
 
-const getDefaultLayoutByTool = (tool) =>
-	defaultLayout.find(({ i }) => i === tool) || {};
+const getLayoutByTool = (tool, layout = defaultLayout) =>
+	layout.find(({ i }) => i === tool) || {};
 
-const layout = getLayout().map(({ w, h, x, y, i }) => {
-	const defaultItemLayout = getDefaultLayoutByTool(i);
+const LAYOUT = getLayout().map(({ w, h, x, y, i }) => {
+	const defaultItemLayout = getLayoutByTool(i);
 	const itemLayout = { ...defaultItemLayout };
 	if (defaultItemLayout.isResizable) {
 		itemLayout.w = w;
@@ -163,7 +165,7 @@ class Trade extends PureComponent {
 			chartHeight: 0,
 			chartWidth: 0,
 			symbol: '',
-			layout: layout.length > 0 ? layout : defaultLayout,
+			layout: LAYOUT.length > 0 ? LAYOUT : defaultLayout,
 			rowHeight,
 		};
 		this.priceTimeOut = '';
@@ -208,8 +210,8 @@ class Trade extends PureComponent {
 				.filter(([, { is_visible }]) => !!is_visible)
 				.forEach(([tool]) => {
 					if (!layout.find(({ i }) => i === tool)) {
-						const defaultItemLayout = getDefaultLayoutByTool(tool);
-						newItemsLayout.push({ ...defaultItemLayout, x: 0, y: Infinity });
+						const defaultItemLayout = getLayoutByTool(tool);
+						newItemsLayout.push(defaultItemLayout);
 					}
 				});
 			this.setState({ layout: [...layout, ...newItemsLayout] });
@@ -358,6 +360,12 @@ class Trade extends PureComponent {
 		}
 	};
 
+	setSliderRef = (sliderRef) => {
+		if (sliderRef) {
+			this.sliderRef = sliderRef;
+		}
+	};
+
 	setActiveTab = (activeTab) => {
 		const { setTradeTab } = this.props;
 		setTradeTab(activeTab);
@@ -429,6 +437,13 @@ class Trade extends PureComponent {
 		};
 	};
 
+	resetSlider = () => {
+		console.log(this.sliderRef);
+		if (this.sliderRef) {
+			this.sliderRef.reset();
+		}
+	};
+
 	subscribe = (pair) => {
 		const { orderbookWs, wsInitialized } = this.state;
 		if (orderbookWs && wsInitialized) {
@@ -472,12 +487,12 @@ class Trade extends PureComponent {
 			orderbookReady,
 			balance,
 			activeLanguage,
-			activeTheme,
 			settings,
 			pairs,
 			coins,
 			discount,
 			fees,
+			tickers,
 			recentTradesMarket,
 			recentTradesMarketData,
 			activeOrdersMarket,
@@ -492,6 +507,42 @@ class Trade extends PureComponent {
 			onAmountClick: this.onAmountClick,
 			orderbookFetched,
 		};
+
+		const chartTitle = (
+			<div className="d-flex flex-1">
+				<div className="vertical-line-seperator" />
+				<div className="trade-daily-value-container">
+					<div className="ml-1">{strings['24H_MAX']}</div>
+					<span className="trade_header_values">
+						{formatCurrency(tickers?.[pair]?.high)}
+						&nbsp;
+						{pairs[1]}
+					</span>
+				</div>
+				<div className="vertical-line-seperator" />
+				<div className="trade-daily-value-container">
+					<div className="trade_block-title-items ml-1">
+						{strings['24H_MIN']}
+					</div>
+					<span className="trade_header_values">
+						{formatCurrency(tickers?.[pair]?.low)}
+						&nbsp;
+						{pairs[1]}
+					</span>
+				</div>
+				<div className="vertical-line-seperator" />
+				<div className="trade-daily-value-container">
+					<div className="trade_block-title-items ml-1">
+						{strings['24H_VAL']}
+					</div>
+					<span className="trade_header_values">
+						{tickers?.[pair]?.volume}
+						&nbsp;
+						{pairs[0]}
+					</span>
+				</div>
+			</div>
+		);
 
 		switch (key) {
 			case 'orderbook': {
@@ -519,6 +570,7 @@ class Trade extends PureComponent {
 						<TradeBlock
 							stringId="TOOLS.CHART"
 							title={STRINGS['TOOLS.CHART']}
+							titleValues={chartTitle}
 							setRef={this.setChartRef}
 							className="f-1 overflow-x"
 							pairData={pairData}
@@ -526,12 +578,7 @@ class Trade extends PureComponent {
 							tool={key}
 						>
 							{pair && chartHeight > 0 && (
-								<TVChartContainer
-									activeTheme={activeTheme}
-									symbol={symbol}
-									// tradeHistory={tradeHistory}
-									pairData={pairData}
-								/>
+								<TVChartContainer symbol={symbol} pairData={pairData} />
 							)}
 						</TradeBlock>
 					</div>
@@ -573,6 +620,8 @@ class Trade extends PureComponent {
 								showPopup={settings.notification.popup_order_confirmation}
 								setPriceRef={this.setPriceRef}
 								setSizeRef={this.setSizeRef}
+								setSliderRef={this.setSliderRef}
+								resetSlider={this.resetSlider}
 							/>
 						</TradeBlock>
 					</div>
@@ -587,7 +636,6 @@ class Trade extends PureComponent {
 							discount={discount}
 							pairs={pairs}
 							coins={coins}
-							activeTheme={activeTheme}
 							isLoggedIn={isLoggedIn()}
 							goToTransactionsHistory={this.goToTransactionsHistory}
 							goToPair={this.goToPair}
@@ -605,7 +653,6 @@ class Trade extends PureComponent {
 							discount={discount}
 							pairs={pairs}
 							coins={coins}
-							activeTheme={activeTheme}
 							isLoggedIn={isLoggedIn()}
 							goToTransactionsHistory={this.goToTransactionsHistory}
 							goToPair={this.goToPair}
@@ -623,11 +670,7 @@ class Trade extends PureComponent {
 							className="f-1"
 							tool={key}
 						>
-							<SidebarHub
-								isLogged={isLoggedIn()}
-								pair={pair}
-								theme={activeTheme}
-							/>
+							<SidebarHub isLogged={isLoggedIn()} pair={pair} />
 						</TradeBlock>
 					</div>
 				);
@@ -676,7 +719,6 @@ class Trade extends PureComponent {
 			orderbookReady,
 			balance,
 			activeLanguage,
-			activeTheme,
 			settings,
 			orderLimits,
 			pairs,
@@ -709,7 +751,6 @@ class Trade extends PureComponent {
 						pair={pair}
 						pairData={pairData}
 						activeLanguage={activeLanguage}
-						activeTheme={activeTheme}
 						symbol={symbol}
 						orderLimits={orderLimits}
 					/>
@@ -744,7 +785,6 @@ class Trade extends PureComponent {
 						pairData={pairData}
 						pairs={pairs}
 						coins={coins}
-						activeTheme={activeTheme}
 					/>
 				),
 			},
@@ -854,7 +894,6 @@ const mapStateToProps = (state) => {
 		balance: state.user.balance,
 		orderbookReady: true,
 		activeLanguage: state.app.language,
-		activeTheme: state.app.theme,
 		fees: feesDataSelector(state),
 		settings: state.user.settings,
 		orderLimits: state.app.orderLimits,
@@ -863,6 +902,7 @@ const mapStateToProps = (state) => {
 		constants: state.app.constants,
 		tools: state.tools,
 		activeTab: state.app.tradeTab,
+		tickers: state.app.tickers,
 	};
 };
 

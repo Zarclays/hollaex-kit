@@ -22,6 +22,7 @@ body {
 	font-size: $font-size-main !important;
 	font-family: $en--font-family !important;
 	height: 100%;
+	transition: all 0.3s;
 }
 
 // .ham_menu_item{
@@ -49,7 +50,8 @@ body {
 // 	 padding-top: 3rem;
 // }
 
-.language_rtl {
+.half-opacity {
+	opacity: 0.5;
 }
 
 .direction_rtl {
@@ -99,6 +101,10 @@ input,
 input:focus {
 	outline: none;
 	border: none;
+}
+
+.onHoverOpacity:hover {
+	opacity: 0.5;
 }
 
 input[type='number'] {
@@ -185,8 +191,19 @@ svg {
 	.incoming-coin-01,
 	.coin-btc-5,
 	.stake-page-icon,
-	.fiat-kyc {
+	.fiat-kyc,
+	.all-apps,
+	.my-apps,
+	.apps,
+	.search-blockchain,
+	.sparkle-dust,
+	.dust-sweeper,
+	.dust-settlement {
 		fill: $colors-black;
+	}
+
+	.dust-settlement-green {
+		fill: $colors-notifications-green;
 	}
 
 	.account-inactive {

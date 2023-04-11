@@ -11,7 +11,7 @@ import querystring from 'query-string';
 // import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons';
 // import { Button } from 'antd';
 import { setSideBarState, getSideBarState } from 'utils/sideBar';
-import AppMenuSidebar from '../../components/AppMenuSidebar';
+import AppMenuSidebar from 'components/AppMenuSidebar';
 import { addElements, injectHTML } from 'utils/script';
 import { SuccessDisplay } from 'components';
 
@@ -29,13 +29,9 @@ import {
 import { storeTools } from 'actions/toolsAction';
 import STRINGS from 'config/localizedStrings';
 
-import {
-	getThemeClass,
-	getChatMinimized,
-	setChatMinimized,
-} from '../../utils/theme';
-import { checkUserSessionExpired } from '../../utils/utils';
-import { getTokenTimestamp, isLoggedIn, isAdmin } from '../../utils/token';
+import { getChatMinimized, setChatMinimized } from 'utils/theme';
+import { checkUserSessionExpired } from 'utils/utils';
+import { getTokenTimestamp, isLoggedIn, isAdmin } from 'utils/token';
 import {
 	AppBar,
 	AppMenuBar,
@@ -47,7 +43,7 @@ import {
 	SnackNotification,
 	SnackDialog,
 	PairTabs,
-} from '../../components';
+} from 'components';
 import {
 	ContactForm,
 	HelpfulResourcesForm,
@@ -64,12 +60,10 @@ import AppFooter from '../../components/AppFooter';
 import OperatorControls from 'containers/OperatorControls';
 import MarketSelector from 'components/AppBar/MarketSelector';
 import ConnectViaDesktop from 'containers/Stake/components/ConnectViaDesktop';
+import ConfigureApps from 'containers/Apps/ConfigureApps';
 
-import {
-	getClasesForLanguage,
-	getFontClassForLanguage,
-} from '../../utils/string';
-import { getExchangeInitialized } from '../../utils/initialize';
+import { getClasesForLanguage, getFontClassForLanguage } from 'utils/string';
+import { getExchangeInitialized } from 'utils/initialize';
 
 import Socket from './Socket';
 import Container from './Container';
@@ -97,7 +91,7 @@ class App extends Component {
 	ordersQueued = [];
 	limitTimeOut = null;
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		const chatIsClosed = getChatMinimized();
 		this.setState({
 			chatIsClosed,
@@ -270,8 +264,8 @@ class App extends Component {
 
 	handleFitHeight = (path) => {
 		let pathname = this.getClassForActivePath(path);
-		if (path.indexOf('/trade/add/tabs') !== -1) {
-			pathname = '/trade/add/tabs';
+		if (path.indexOf('/markets') !== -1) {
+			pathname = '/markets';
 		}
 		this.setState({ sidebarFitHeight: FIT_SCREEN_HEIGHT.includes(pathname) });
 	};
@@ -490,7 +484,6 @@ class App extends Component {
 						type={type}
 						data={data}
 						onClose={this.onCloseDialog}
-						activeTheme={this.props.activeTheme}
 					/>
 				);
 			case MARKET_SELECTOR:
@@ -505,10 +498,19 @@ class App extends Component {
 			case NOTIFICATIONS.METAMASK_ERROR:
 				return (
 					<MessageDisplay
-						iconId="RED_WARNING"
-						iconPath={ICONS['RED_WARNING']}
+						iconId="META_MASK_NOT_FOUND"
+						iconPath={ICONS['META_MASK_NOT_FOUND']}
 						onClick={this.onCloseDialog}
 						text={data}
+						title={STRINGS['STAKE.INSTALL_METAMASK_TITLE']}
+						titleId={'STAKE.INSTALL_METAMASK_TITLE'}
+					/>
+				);
+			case NOTIFICATIONS.CONFIGURE_APPS:
+				return (
+					<ConfigureApps
+						onClose={this.onCloseDialog}
+						onRemove={data.onRemove}
 					/>
 				);
 			case CONNECT_VIA_DESKTOP:
@@ -641,7 +643,6 @@ class App extends Component {
 			// verification_level,
 			activeLanguage,
 			// openContactForm,
-			activeTheme,
 			// unreadMessages,
 			router,
 			location,
@@ -718,7 +719,6 @@ class App extends Component {
 					/>
 					<div
 						className={classnames(
-							getThemeClass(activeTheme),
 							activePath,
 							symbol,
 							fontClass,
@@ -734,7 +734,6 @@ class App extends Component {
 							className={classnames(
 								'app_container',
 								'd-flex',
-								getThemeClass(activeTheme),
 								activePath,
 								symbol,
 								fontClass,
@@ -871,7 +870,6 @@ class App extends Component {
 										)}
 										onCloseDialog={this.onCloseDialog}
 										shouldCloseOnOverlayClick={shouldCloseOnOverlayClick}
-										theme={activeTheme}
 										showCloseText={
 											!(
 												activeNotification.type === NOTIFICATIONS.STAKE ||
@@ -901,7 +899,6 @@ class App extends Component {
 											this.renderDialogContent(
 												activeNotification
 												// prices,
-												// activeTheme
 											)}
 									</Dialog>
 									{!isMobile && !isHome && features && features.chat && (
@@ -932,27 +929,21 @@ class App extends Component {
 						<SnackDialog />
 					</div>
 					<div
-						className={classnames(
-							getThemeClass(activeTheme),
-							languageClasses[0],
-							{
-								'layout-mobile': isMobile,
-								'layout-desktop': isBrowser,
-							}
-						)}
+						className={classnames(languageClasses[0], {
+							'layout-mobile': isMobile,
+							'layout-desktop': isBrowser,
+						})}
 					>
-						{showFooter && !isChartEmbed && (
-							<AppFooter theme={activeTheme} constants={constants} />
-						)}
+						{showFooter && !isChartEmbed && <AppFooter constants={constants} />}
 					</div>
 				</div>
 				{isAdmin() && isBrowser && !isChartEmbed && (
 					<OperatorControls initialData={this.props.location} />
 				)}
 				<Dialog
+					label="successful_dialog"
 					isOpen={isCustomNotification}
 					onCloseDialog={this.onCloseNotification}
-					theme={activeTheme}
 				>
 					<SuccessDisplay
 						onClick={this.onCloseNotification}

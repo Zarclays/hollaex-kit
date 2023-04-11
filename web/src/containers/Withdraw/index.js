@@ -1,21 +1,20 @@
 import React, { Component } from 'react';
-import classnames from 'classnames';
 import math from 'mathjs';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { formValueSelector, change } from 'redux-form';
 import { isMobile } from 'react-device-detect';
 
-import { Loader, MobileBarBack } from '../../components';
+import { Loader, MobileBarBack } from 'components';
 import withConfig from 'components/ConfigProvider/withConfig';
-import { DEFAULT_COIN_DATA } from '../../config/constants';
-import { getCurrencyFromName, roundNumber } from '../../utils/currency';
-import { getDecimals } from '../../utils/utils';
+import { DEFAULT_COIN_DATA } from 'config/constants';
+import { getCurrencyFromName, roundNumber } from 'utils/currency';
+import { getDecimals } from 'utils/utils';
 import {
 	performWithdraw,
 	// requestWithdrawFee
-} from '../../actions/walletActions';
-import { errorHandler } from '../../components/OtpForm/utils';
+} from 'actions/walletActions';
+import { errorHandler } from 'components/OtpForm/utils';
 
 import { openContactForm } from 'actions/appActions';
 
@@ -31,6 +30,7 @@ import {
 
 import { FORM_NAME } from './form';
 import { limitNumberWithinRange } from 'utils/math';
+import { STATIC_ICONS } from 'config/icons';
 
 class Withdraw extends Component {
 	state = {
@@ -39,9 +39,10 @@ class Withdraw extends Component {
 		checked: false,
 		currency: '',
 		selectedMethodData: 'address',
+		qrScannerOpen: false,
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		if (this.props.verification_level) {
 			this.validateRoute(this.props.routeParams.currency, this.props.coins);
 		}
@@ -159,13 +160,14 @@ class Withdraw extends Component {
 			coins,
 			verification_level,
 			this.props.activeTheme,
-			ICONS['BLUE_PLUS'],
-			'BLUE_PLUS',
+			STATIC_ICONS['MAX_ICON'],
+			'MAX_ICON',
 			networks,
 			network,
 			ICONS,
 			selectedMethod,
-			handleMethodChange
+			handleMethodChange,
+			this.openQRScanner
 		);
 
 		let initialValues = generateInitialValues(
@@ -225,12 +227,20 @@ class Withdraw extends Component {
 			fee_coin,
 			fee_type,
 			selectedNetwork,
+			prices,
 		} = this.props;
 		const { withdrawal_limit } = config_level[verification_level] || {};
 		const { currency } = this.state;
 		const balanceAvailable = balance[`${currency}_available`];
-		const { increment_unit, withdrawal_fees = {}, network } =
+		const { increment_unit, withdrawal_fees = {}, network, max: coin_max } =
 			coins[currency] || DEFAULT_COIN_DATA;
+
+		const oraclePrice = prices[currency];
+		const has_price = oraclePrice && oraclePrice !== 0 && oraclePrice !== -1;
+		const calculated_withdrawal_limit = has_price
+			? math.divide(withdrawal_limit, oraclePrice)
+			: coin_max;
+
 		const isPercentage = fee_type === 'percentage';
 		// if (currency === BASE_CURRENCY) {
 		// 	const fee = calculateBaseFee(balanceAvailable);
@@ -256,16 +266,19 @@ class Withdraw extends Component {
 			if (amount < 0) {
 				amount = 0;
 			} else if (
-				math.larger(amount, math.number(withdrawal_limit)) &&
+				math.larger(amount, math.number(calculated_withdrawal_limit)) &&
 				withdrawal_limit !== 0 &&
 				withdrawal_limit !== -1
 			) {
-				amount = math.number(math.fraction(withdrawal_limit));
+				amount = math.number(math.fraction(calculated_withdrawal_limit));
 			}
 		} else {
 			let max_allowed = balanceAvailable;
 			if (withdrawal_limit !== 0 && withdrawal_limit !== -1) {
-				max_allowed = math.min(math.number(withdrawal_limit), balanceAvailable);
+				max_allowed = math.min(
+					math.number(calculated_withdrawal_limit),
+					balanceAvailable
+				);
 			}
 
 			if (isPercentage) {
@@ -314,6 +327,27 @@ class Withdraw extends Component {
 		// }
 	};
 
+	openQRScanner = () => {
+		this.setState({ qrScannerOpen: true });
+	};
+
+	closeQRScanner = () => {
+		this.setState({ qrScannerOpen: false });
+	};
+
+	getQRData = (data) => {
+		const { currency } = this.state;
+		const { dispatch, selectedNetwork } = this.props;
+
+		if (currency === 'xrp' || currency === 'xlm' || selectedNetwork === 'xlm') {
+			const [address = '', destinationTag = ''] = data?.split(':') || [];
+			dispatch(change(FORM_NAME, 'address', address));
+			dispatch(change(FORM_NAME, 'destination_tag', destinationTag));
+		} else {
+			dispatch(change(FORM_NAME, 'address', data));
+		}
+	};
+
 	onGoBack = () => {
 		this.props.router.push('/wallet');
 	};
@@ -338,6 +372,7 @@ class Withdraw extends Component {
 			currency,
 			checked,
 			selectedMethodData,
+			qrScannerOpen,
 		} = this.state;
 		if (!currency || !checked) {
 			return <div />;
@@ -365,6 +400,9 @@ class Withdraw extends Component {
 			selectedNetwork,
 			email,
 			selectedMethodData,
+			closeQRScanner: this.closeQRScanner,
+			qrScannerOpen,
+			getQRData: this.getQRData,
 		};
 
 		return (
@@ -384,7 +422,7 @@ class Withdraw extends Component {
 					{/* // This commented code can be used if you want to enforce user to have a verified bank account before doing the withdrawal
 					{verification_level >= MIN_VERIFICATION_LEVEL_TO_WITHDRAW &&
 					verification_level <= MAX_VERIFICATION_LEVEL_TO_WITHDRAW ? ( */}
-					<div className={classnames('inner_container')}>
+					<div className="inner_container">
 						<div className="information_block">
 							<div
 								className="information_block-text_wrapper"

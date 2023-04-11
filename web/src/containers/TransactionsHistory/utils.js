@@ -1,20 +1,23 @@
 import React from 'react';
-import { InfoCircleTwoTone } from '@ant-design/icons';
+import {
+	InfoCircleTwoTone,
+	PlusSquareOutlined,
+	MinusSquareOutlined,
+} from '@ant-design/icons';
 import { notification } from 'antd';
 import classnames from 'classnames';
 import mathjs from 'mathjs';
 import { isMobile } from 'react-device-detect';
 
-import STRINGS from '../../config/localizedStrings';
-
-import { Image } from '../../components';
+import STRINGS from 'config/localizedStrings';
+import { Image } from 'components';
 import {
 	EXPLORERS_ENDPOINT,
 	BASE_CURRENCY,
 	CURRENCY_PRICE_FORMAT,
 	DEFAULT_COIN_DATA,
-} from '../../config/constants';
-import { getFormatTimestamp } from '../../utils/utils';
+} from 'config/constants';
+import { getFormatTimestamp } from 'utils/utils';
 import { formatToCurrency, formatBaseAmount } from 'utils/currency';
 
 notification.config({
@@ -68,9 +71,29 @@ export const generateOrderHistoryHeaders = (
 	coins,
 	discount,
 	prices = {},
-	ICONS
+	ICONS,
+	type
 ) => {
 	return [
+		{
+			key: 'icon',
+			className: 'sticky-col',
+			renderCell: (
+				{ display_name, icon_id },
+				key,
+				index,
+				isExpandable,
+				isExpanded
+			) => {
+				return (
+					<td key={index}>
+						<div className="d-flex">
+							{isExpanded ? <MinusSquareOutlined /> : <PlusSquareOutlined />}
+						</div>
+					</td>
+				);
+			},
+		},
 		{
 			stringId: 'PAIR',
 			label: STRINGS['PAIR'],
@@ -94,8 +117,8 @@ export const generateOrderHistoryHeaders = (
 			},
 		},
 		{
-			stringId: 'TYPE',
-			label: STRINGS['TYPE'],
+			stringId: 'SIDE',
+			label: STRINGS['SIDE'],
 			key: 'side',
 			exportToCsv: ({ side = '' }) => side,
 			renderCell: ({ side = '' }, key, index) => {
@@ -104,6 +127,19 @@ export const generateOrderHistoryHeaders = (
 						<div className={classnames(side)}>
 							{STRINGS[`SIDES_VALUES.${side}`]}
 						</div>
+					</td>
+				);
+			},
+		},
+		{
+			stringId: 'TYPE',
+			label: STRINGS['TYPE'],
+			key: 'type',
+			exportToCsv: ({ type = '' }) => type,
+			renderCell: ({ type = '' }, key, index) => {
+				return (
+					<td key={index}>
+						{type ? STRINGS[`TYPES.${type.toUpperCase()}`] : ''}
 					</td>
 				);
 			},
@@ -151,14 +187,16 @@ export const generateOrderHistoryHeaders = (
 				if (pairs[symbol]) {
 					const { increment_price, pair_2_display } = pairs[symbol];
 
-					return STRINGS.formatString(
-						CURRENCY_PRICE_FORMAT,
-						formatToCurrency(
-							calculatePrice(quick, price, size),
-							increment_price
-						),
-						pair_2_display
-					).join('');
+					return price
+						? STRINGS.formatString(
+								CURRENCY_PRICE_FORMAT,
+								formatToCurrency(
+									calculatePrice(quick, price, size),
+									increment_price
+								),
+								pair_2_display
+						  ).join('')
+						: '';
 				} else {
 					return calculatePrice(quick, price, size);
 				}
@@ -169,18 +207,65 @@ export const generateOrderHistoryHeaders = (
 
 					return (
 						<td key={index}>
-							{STRINGS.formatString(
-								CURRENCY_PRICE_FORMAT,
-								formatToCurrency(
-									calculatePrice(quick, price, size),
-									increment_price
-								),
-								pair_2_display
-							)}
+							{price
+								? STRINGS.formatString(
+										CURRENCY_PRICE_FORMAT,
+										formatToCurrency(
+											calculatePrice(quick, price, size),
+											increment_price
+										),
+										pair_2_display
+								  )
+								: STRINGS['NA']}
 						</td>
 					);
 				} else {
 					return <td key={index}>{calculatePrice(quick, price, size)}</td>;
+				}
+			},
+		},
+		{
+			stringId: 'AVERAGE',
+			label: STRINGS['AVERAGE'],
+			key: 'average',
+			exportToCsv: ({ average = 0, size = 0, quick, symbol }) => {
+				if (pairs[symbol]) {
+					const { increment_price, pair_2_display } = pairs[symbol];
+
+					return average
+						? STRINGS.formatString(
+								CURRENCY_PRICE_FORMAT,
+								formatToCurrency(
+									calculatePrice(quick, average, size),
+									increment_price
+								),
+								pair_2_display
+						  ).join('')
+						: '';
+				} else {
+					return calculatePrice(quick, average, size);
+				}
+			},
+			renderCell: ({ average = 0, size = 0, quick, symbol }, key, index) => {
+				if (pairs[symbol]) {
+					const { increment_price, pair_2_display } = pairs[symbol];
+
+					return (
+						<td key={index}>
+							{average
+								? STRINGS.formatString(
+										CURRENCY_PRICE_FORMAT,
+										formatToCurrency(
+											calculatePrice(quick, average, size),
+											increment_price
+										),
+										pair_2_display
+								  )
+								: STRINGS['NA']}
+						</td>
+					);
+				} else {
+					return <td key={index}>{calculatePrice(quick, average, size)}</td>;
 				}
 			},
 		},
@@ -276,7 +361,7 @@ export const generateOrderHistoryHeaders = (
 				);
 			},
 		},
-		{
+		/*{
 			stringId: 'FEE,NO_FEE',
 			label: STRINGS['FEE'],
 			key: 'fee',
@@ -286,22 +371,22 @@ export const generateOrderHistoryHeaders = (
 				<td key={index}>
 					{STRINGS.formatString(
 						CURRENCY_PRICE_FORMAT,
-						formatToCurrency(fee, 0, true),
+						fee,
 						fee_coin_display
 					)}
 				</td>
 			),
-		},
+		},*/
 		{
 			stringId: 'TIME',
-			label: STRINGS['TIME'],
-			key: 'updated_at',
+			label: type,
+			key: 'created_at',
 			className: isMobile ? 'text-center' : '',
-			exportToCsv: ({ updated_at = '' }) => updated_at,
-			renderCell: ({ updated_at = '' }, key, index) => {
+			exportToCsv: ({ created_at = '' }) => created_at,
+			renderCell: ({ created_at = '' }, key, index) => {
 				return (
 					<td key={index} className={isMobile ? 'text-center' : ''}>
-						{getFormatTimestamp(updated_at)}
+						{getFormatTimestamp(created_at)}
 					</td>
 				);
 			},
@@ -315,9 +400,29 @@ export const generateTradeHeaders = (
 	coins,
 	discount,
 	prices = {},
-	ICONS
+	ICONS,
+	setActiveTab = () => {}
 ) => {
 	return [
+		{
+			key: 'icon',
+			className: 'sticky-col',
+			renderCell: (
+				{ display_name, icon_id },
+				key,
+				index,
+				isExpandable,
+				isExpanded
+			) => {
+				return (
+					<td key={index}>
+						<div className="d-flex">
+							{isExpanded ? <MinusSquareOutlined /> : <PlusSquareOutlined />}
+						</div>
+					</td>
+				);
+			},
+		},
 		{
 			stringId: 'PAIR',
 			label: STRINGS['PAIR'],
@@ -341,8 +446,8 @@ export const generateTradeHeaders = (
 			},
 		},
 		{
-			stringId: 'TYPE',
-			label: STRINGS['TYPE'],
+			stringId: 'SIDE',
+			label: STRINGS['SIDE'],
 			key: 'side',
 			exportToCsv: ({ side = '' }) => side,
 			renderCell: ({ side = '' }, key, index) => {
@@ -413,17 +518,18 @@ export const generateTradeHeaders = (
 			renderCell: ({ price = 0, size = 0, quick, symbol }, key, index) => {
 				if (pairs[symbol]) {
 					const { pair_2_display, increment_price } = pairs[symbol];
-
 					return (
 						<td key={index}>
-							{STRINGS.formatString(
-								CURRENCY_PRICE_FORMAT,
-								formatToCurrency(
-									calculatePrice(quick, price, size),
-									increment_price
-								),
-								pair_2_display
-							)}
+							{price
+								? STRINGS.formatString(
+										CURRENCY_PRICE_FORMAT,
+										formatToCurrency(
+											calculatePrice(quick, price, size),
+											increment_price
+										),
+										pair_2_display
+								  )
+								: ''}
 						</td>
 					);
 				} else {

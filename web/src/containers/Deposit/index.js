@@ -1,20 +1,16 @@
 import React, { Component } from 'react';
-import classnames from 'classnames';
 import { bindActionCreators } from 'redux';
 import { formValueSelector } from 'redux-form';
 import { connect } from 'react-redux';
 import { isMobile } from 'react-device-detect';
-import { BALANCE_ERROR } from '../../config/constants';
-import STRINGS from '../../config/localizedStrings';
-import { getCurrencyFromName } from '../../utils/currency';
+import { BALANCE_ERROR } from 'config/constants';
+import STRINGS from 'config/localizedStrings';
+import { getCurrencyFromName } from 'utils/currency';
 import { createAddress, cleanCreateAddress } from 'actions/userAction';
 import { NOTIFICATIONS } from 'actions/appActions';
 import { DEFAULT_COIN_DATA } from 'config/constants';
 
-import {
-	openContactForm,
-	setSnackNotification,
-} from '../../actions/appActions';
+import { openContactForm, setSnackNotification } from 'actions/appActions';
 
 import { MobileBarBack, Dialog, Notification } from 'components';
 import {
@@ -27,7 +23,7 @@ import RenderContent, {
 	generateFormFields,
 } from './utils';
 import { getWallet } from 'utils/wallet';
-
+import QRCode from './QRCode';
 import withConfig from 'components/ConfigProvider/withConfig';
 
 class Deposit extends Component {
@@ -39,9 +35,10 @@ class Deposit extends Component {
 		dialogIsOpen: false,
 		formFields: {},
 		initialValues: {},
+		qrCodeOpen: false,
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		if (this.props.quoteData.error === BALANCE_ERROR) {
 			this.setState({ depositPrice: this.props.quoteData.data.price });
 		}
@@ -214,6 +211,7 @@ class Deposit extends Component {
 			coins,
 			network,
 			fee,
+			openQRCode: this.openQRCode,
 		});
 
 		const initialValues = {
@@ -224,6 +222,14 @@ class Deposit extends Component {
 		};
 
 		this.setState({ address, formFields, initialValues, showGenerateButton });
+	};
+
+	openQRCode = () => {
+		this.setState({ qrCodeOpen: true });
+	};
+
+	closeQRCode = () => {
+		this.setState({ qrCodeOpen: false });
 	};
 
 	render() {
@@ -237,6 +243,7 @@ class Deposit extends Component {
 			addressRequest,
 			selectedNetwork,
 			router,
+			wallet,
 		} = this.props;
 
 		const {
@@ -248,6 +255,8 @@ class Deposit extends Component {
 			address,
 			initialValues,
 			showGenerateButton,
+			qrCodeOpen,
+			networks,
 		} = this.state;
 
 		if (!id || !currency || !checked) {
@@ -266,7 +275,7 @@ class Deposit extends Component {
 							coins,
 							'DEPOSIT_BITCOIN'
 						)}
-					<div className={classnames('inner_container')}>
+					<div className="inner_container">
 						<div className="information_block">
 							<div
 								className="information_block-text_wrapper"
@@ -325,6 +334,24 @@ class Deposit extends Component {
 							currency={currency}
 							data={addressRequest}
 							coins={coins}
+						/>
+					)}
+				</Dialog>
+				<Dialog
+					isOpen={qrCodeOpen}
+					label="hollaex-modal"
+					className="app-dialog"
+					onCloseDialog={this.closeQRCode}
+					shouldCloseOnOverlayClick={false}
+					showCloseText={true}
+					style={{ 'z-index': 100 }}
+				>
+					{qrCodeOpen && (
+						<QRCode
+							closeQRCode={this.closeQRCode}
+							data={getWallet(currency, selectedNetwork, wallet, networks)}
+							currency={currency}
+							onCopy={this.onCopy}
 						/>
 					)}
 				</Dialog>

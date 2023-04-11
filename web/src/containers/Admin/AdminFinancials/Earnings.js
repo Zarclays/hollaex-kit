@@ -93,12 +93,13 @@ class Earnings extends Component {
 			earningsData: [],
 			feesData: [],
 			isOpen: false,
-			end_date: moment().add(1, 'hours').format('YYYY-MM-DD hh:mm A'),
-			start_date: moment().subtract(90, 'days').format('YYYY-MM-DD hh:mm A'),
+			end_date: moment().add(1, 'hours').format(),
+			start_date: moment().subtract(90, 'days').format(),
 			buttonSubmitting: false,
 			currentScreen: '',
 			userDetails: [],
 			isLoading: false,
+			isEarning: false,
 		};
 	}
 
@@ -111,6 +112,7 @@ class Earnings extends Component {
 		this.setState({
 			error: '',
 			buttonSubmitting: true,
+			isEarning: true,
 		});
 		return getFees({ start_date, end_date })
 			.then((response) => {
@@ -123,13 +125,14 @@ class Earnings extends Component {
 				if (response) {
 					this.handleData(response);
 				}
-				this.setState({ buttonSubmitting: false });
+				this.setState({ buttonSubmitting: false, isEarning: false });
 			})
 			.catch((error) => {
 				const message = error.data ? error.data.message : error.message;
 				this.setState({
 					error: message,
 					buttonSubmitting: false,
+					isEarning: false,
 				});
 			});
 	};
@@ -193,14 +196,14 @@ class Earnings extends Component {
 
 	setFilterDates = (value) => {
 		if (value && value.length) {
-			const start_date = value[0].format('YYYY-MM-DD hh:mm A');
-			const end_date = value[1].format('YYYY-MM-DD hh:mm A');
+			const start_date = value[0].format();
+			const end_date = value[1].format();
 			this.setState({ start_date, end_date });
 		}
 		if (!value) {
 			this.setState({
-				end_date: moment().add(1, 'hours').format('YYYY-MM-DD hh:mm A'),
-				start_date: moment().subtract(90, 'days').format('YYYY-MM-DD hh:mm A'),
+				end_date: moment().add(1, 'hours').format(),
+				start_date: moment().subtract(90, 'days').format(),
 			});
 		}
 	};
@@ -308,7 +311,7 @@ class Earnings extends Component {
 									/>
 								);
 							}}
-							loading={!earningsData.length}
+							loading={this.state.isEarning}
 						/>
 					</div>
 				</div>

@@ -12,7 +12,13 @@ const PluginConfigure = ({
 	updatePluginList,
 	removePlugin,
 	restart,
-	handleRedirect
+	handleRedirect,
+	handleStep,
+	activatedPluginDetails,
+	getActivationsPlugin,
+	onChangeNextType,
+	router,
+	setProcessing,
 }) => {
 	const [pluginData, setPlugin] = useState({});
 	const [selectedNetworkPlugin, setNetworkData] = useState({});
@@ -60,6 +66,7 @@ const PluginConfigure = ({
 			selectedPlugin={pluginData}
 			requestPlugin={requestPlugin}
 			restart={restart}
+			handleStep={handleStep}
 		/>
 	) : (
 		<PluginDetails
@@ -67,12 +74,17 @@ const PluginConfigure = ({
 			pluginData={pluginData}
 			handleBreadcrumb={handleBreadcrumb}
 			selectedPlugin={selectedPlugin}
+			activatedPluginDetails={activatedPluginDetails}
+			getActivationsPlugin={getActivationsPlugin}
 			selectedNetworkPlugin={selectedNetworkPlugin}
 			handlePluginList={handlePluginList}
 			updatePluginList={updatePluginList}
 			removePlugin={removePlugin}
 			restart={restart}
 			handleRedirect={handleRedirect}
+			router={router}
+			onChangeNextType={onChangeNextType}
+			setProcessing={setProcessing}
 		/>
 	);
 };

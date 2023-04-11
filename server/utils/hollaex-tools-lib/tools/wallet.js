@@ -195,9 +195,15 @@ async function validateWithdrawal(user, address, amount, currency, network = nul
 const sendRequestWithdrawalEmail = (user_id, address, amount, currency, opts = {
 	network: null,
 	otpCode: null,
+	fee: null,
+	fee_coin: null,
+	skipValidate: false, // should be used with care if set to true
 	ip: null,
 	domain: null
 }) => {
+	let fee = opts.fee;
+	let fee_coin = opts.fee_coin;
+
 	return verifyOtpBeforeAction(user_id, opts.otpCode)
 		.then((validOtp) => {
 			if (!validOtp) {
@@ -206,7 +212,12 @@ const sendRequestWithdrawalEmail = (user_id, address, amount, currency, opts = {
 			return getUserByKitId(user_id);
 		})
 		.then(async (user) => {
-			const { fee, fee_coin } = await validateWithdrawal(user, address, amount, currency, opts.network);
+			if (!opts.skipValidate) {
+				const withdrawal = await validateWithdrawal(user, address, amount, currency, opts.network);
+				fee = withdrawal.fee;
+				fee_coin = withdrawal.fee_coin;
+			}
+			
 
 			return withdrawalRequestEmail(
 				user,
@@ -230,7 +241,7 @@ const sendRequestWithdrawalEmail = (user_id, address, amount, currency, opts = {
 const withdrawalRequestEmail = (user, data, domain, ip) => {
 	data.timestamp = Date.now();
 	let stringData = JSON.stringify(data);
-	const token = crypto.randomBytes(60).toString('hex');
+	const token = data.transaction_id || crypto.randomBytes(60).toString('hex');
 
 	return client.hsetAsync(WITHDRAWALS_REQUEST_KEY, token, stringData)
 		.then(() => {
@@ -676,7 +687,7 @@ const getUserTransactionsByKitId = (
 						endDate,
 						transactionId,
 						address,
-						format: (format && format === 'csv') ? 'all' : null, // for csv get all data
+						format: (format && (format === 'csv' || format === 'all')) ? 'all' : null, // for csv get all data
 						...opts
 					});
 				});
@@ -703,7 +714,7 @@ const getUserTransactionsByKitId = (
 						endDate,
 						transactionId,
 						address,
-						format: (format && format === 'csv') ? 'all' : null, // for csv get all data
+						format: (format && (format === 'csv' || format === 'all')) ? 'all' : null, // for csv get all data
 						...opts
 					});
 				});
@@ -725,6 +736,7 @@ const getUserTransactionsByKitId = (
 				endDate,
 				transactionId,
 				address,
+				format,
 				opts
 			);
 		} else if (type === 'withdrawal') {
@@ -743,13 +755,14 @@ const getUserTransactionsByKitId = (
 				endDate,
 				transactionId,
 				address,
+				format,
 				opts
 			);
 		}
 	}
 	return promiseQuery
 		.then((transactions) => {
-			if (format) {
+			if (format && format === 'csv') {
 				if (transactions.data.length === 0) {
 					throw new Error(NO_DATA_FOR_CSV);
 				}
@@ -862,6 +875,7 @@ const getExchangeDeposits = (
 	endDate,
 	transactionId,
 	address,
+	format,
 	opts = {
 		additionalHeaders: null
 	}
@@ -882,6 +896,7 @@ const getExchangeDeposits = (
 		endDate,
 		transactionId,
 		address,
+		format: (format && (format === 'csv' || format === 'all')) ? 'all' : null, // for csv get all data
 		...opts
 	})
 		.then(async (deposits) => {
@@ -892,7 +907,7 @@ const getExchangeDeposits = (
 					const user_kit_id = idDictionary[deposit.user_id];
 					deposit.network_id = deposit.user_id;
 					deposit.user_id = user_kit_id;
-					deposit.User.id = user_kit_id;
+					if (deposit.User) deposit.User.id = user_kit_id;
 				}
 			}
 			return deposits;
@@ -914,6 +929,7 @@ const getExchangeWithdrawals = (
 	endDate,
 	transactionId,
 	address,
+	format,
 	opts = {
 		additionalHeaders: null
 	}
@@ -933,6 +949,7 @@ const getExchangeWithdrawals = (
 		endDate,
 		transactionId,
 		address,
+		format: (format && (format === 'csv' || format === 'all')) ? 'all' : null, // for csv get all data
 		...opts
 	})
 		.then(async (withdrawals) => {
@@ -943,7 +960,7 @@ const getExchangeWithdrawals = (
 					const user_kit_id = idDictionary[withdrawal.user_id];
 					withdrawal.network_id = withdrawal.user_id;
 					withdrawal.user_id = user_kit_id;
-					withdrawal.User.id = user_kit_id;
+					if (withdrawal.User) withdrawal.User.id = user_kit_id;
 				}
 			}
 			return withdrawals;

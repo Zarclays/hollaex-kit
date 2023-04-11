@@ -3,7 +3,7 @@ import classnames from 'classnames';
 // import { Link } from 'react-router';
 import { connect } from 'react-redux';
 import TradeBlock from './components/TradeBlock';
-import STRINGS from '../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 import TradeHistory from './components/TradeHistory';
 import TVChartContainer from './ChartContainer';
 
@@ -26,7 +26,6 @@ class MobileChart extends Component {
 		const {
 			pair,
 			pairData,
-			activeTheme,
 			activeLanguage,
 			symbol,
 			// constants,
@@ -54,11 +53,7 @@ class MobileChart extends Component {
 					alignChildTitle={true}
 				>
 					{pair && chartHeight > 0 && (
-						<TVChartContainer
-							activeTheme={activeTheme}
-							symbol={symbol}
-							pairData={pairData}
-						/>
+						<TVChartContainer symbol={symbol} pairData={pairData} />
 					)}
 				</TradeBlock>
 				<TradeBlock title={STRINGS['PUBLIC_SALES']} className="f-1">

@@ -1,10 +1,9 @@
 import React from 'react';
 import Image from 'components/Image';
 
-import STRINGS from '../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
-import { ActionNotification } from '../../components';
-import { EditWrapper } from 'components';
+import { ActionNotification, EditWrapper } from 'components';
 
 const HeaderSection = ({
 	title,
@@ -25,9 +24,19 @@ const HeaderSection = ({
 				)}
 				<div>
 					<div className="d-flex justify-content-between w-100 f-1">
-						<EditWrapper stringId={stringId} iconId={iconId}>
-							<div className="header_title-text font-weight-bold">{title}</div>
-						</EditWrapper>
+						{title && (
+							<EditWrapper
+								stringId={stringId}
+								iconId={iconId}
+								render={(string) => (
+									<div className="header_title-text font-weight-bold">
+										{string}
+									</div>
+								)}
+							>
+								{title}
+							</EditWrapper>
+						)}
 						{!!openContactForm && (
 							<div className="header_title-action">
 								<ActionNotification

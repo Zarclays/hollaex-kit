@@ -158,9 +158,7 @@
 			margin-right: 10px;
 		}
 	}
-	.check-deposit-txt {
-		right: 150px !important;
-	}
+
 	.loader_wrapper {
 		top: 0;
 		left: 0;
@@ -256,5 +254,85 @@
 
 	.rejected {
 		color: $colors-notifications-red;
+	}
+}
+
+.flex-row {
+	flex-direction: row;
+}
+
+.expandable-container {
+	display: flex;
+	flex-direction: column;
+
+	div {
+		display: flex;
+		flex-direction: row;
+	}
+
+	p {
+		margin-right: 1rem;
+		font-weight: thin;
+		margin-bottom: 0px;
+	}
+
+	.font-bold {
+		font-weight: bolder;
+	}
+}
+
+.direction_ltr {
+	.history_block-wrapper {
+		.check-deposit-txt {
+			right: 230px !important;
+			& svg {
+				padding-right: 0.3rem;
+				box-sizing: border-box;
+				border-right: 1px solid $trade-fill-indicator-text;
+				height: 100%;
+			}
+		}
+
+		.download-history {
+			right: 85px !important;
+			& svg {
+				padding-right: 0.1rem;
+				box-sizing: content-box;
+				border-right: 1px solid $trade-fill-indicator-text;
+				height: 100%;
+			}
+		}
+
+		.refresh-history {
+			right: 10px !important;
+		}
+	}
+}
+
+.direction_rtl {
+	.history_block-wrapper {
+		.check-deposit-txt {
+			left: 150px !important;
+			& svg {
+				padding-left: 0.3rem;
+				box-sizing: border-box;
+				border-left: 1px solid $trade-fill-indicator-text;
+				height: 100%;
+			}
+		}
+
+		.download-history {
+			left: 65px !important;
+			& svg {
+				padding-left: 0.1rem;
+				box-sizing: content-box;
+				border-left: 1px solid $trade-fill-indicator-text;
+				height: 100%;
+			}
+		}
+
+		.refresh-history {
+			left: 10px !important;
+		}
 	}
 }

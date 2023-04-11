@@ -1,4 +1,4 @@
-import { APP_TITLE } from '../../config/constants';
+import { APP_TITLE } from 'config/constants';
 
 export const PATHS = [
 	{
@@ -66,6 +66,11 @@ export const PATHS = [
 		path: '/admin/chat',
 		label: 'Chat',
 		routeKey: 'chat',
+	},
+	{
+		path: '/admin/billing',
+		label: 'Billing',
+		routeKey: 'billing',
 	},
 	// {
 	// 	path: '/admin/collateral',

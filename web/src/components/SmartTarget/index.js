@@ -1,4 +1,5 @@
 import React, { Fragment } from 'react';
+import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { RemoteComponent } from 'RemoteComponent';
 import STRINGS from 'config/localizedStrings';
@@ -11,26 +12,35 @@ import withEdit from 'components/EditProvider/withEdit';
 import renderFields from 'components/Form/factoryFields';
 import { getErrorLocalized } from 'utils/errors';
 import { IconTitle, ErrorBoundary } from 'components';
+import { setSnackNotification } from 'actions/appActions';
 
-const DefaultChildren = ({ strings: STRINGS, icons: ICONS }) => {
+const DefaultChildren = ({
+	strings: STRINGS,
+	icons: ICONS,
+	extra: { top, bottom } = {},
+}) => {
 	return (
-		<div
-			style={{
-				height: '28rem',
-				display: 'flex',
-				flexDirection: 'column',
-				alignItems: 'center',
-				justifyContent: 'center',
-			}}
-		>
-			<IconTitle
-				stringId="PAGE_UNDER_CONSTRUCTION"
-				text={STRINGS['PAGE_UNDER_CONSTRUCTION']}
-				iconId="FIAT_UNDER_CONSTRUCTION"
-				iconPath={ICONS['FIAT_UNDER_CONSTRUCTION']}
-				className="flex-direction-column"
-			/>
-		</div>
+		<Fragment>
+			{top}
+			<div
+				style={{
+					height: '28rem',
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					justifyContent: 'center',
+				}}
+			>
+				<IconTitle
+					stringId="PAGE_UNDER_CONSTRUCTION"
+					text={STRINGS['PAGE_UNDER_CONSTRUCTION']}
+					iconId="FIAT_UNDER_CONSTRUCTION"
+					iconPath={ICONS['FIAT_UNDER_CONSTRUCTION']}
+					className="flex-direction-column"
+				/>
+			</div>
+			{bottom}
+		</Fragment>
 	);
 };
 
@@ -44,6 +54,7 @@ const SmartTarget = (props) => {
 		loaderClassName = 'default-remote-component-loader',
 		errorClassName = 'default-remote-component-error',
 		icons: ICONS,
+		extra,
 	} = props;
 
 	return targets.includes(id) ? (
@@ -68,7 +79,7 @@ const SmartTarget = (props) => {
 	) : children ? (
 		<Fragment>{children}</Fragment>
 	) : (
-		<DefaultChildren strings={STRINGS} icons={ICONS} />
+		<DefaultChildren strings={STRINGS} icons={ICONS} extra={extra} />
 	);
 };
 
@@ -98,6 +109,11 @@ const mapStateToProps = (store) => ({
 	pairsTradesFetched: store.orderbook.pairsTradesFetched,
 });
 
-export default connect(mapStateToProps)(
-	withEdit(withConfig(withRouter(SmartTarget)))
-);
+const mapDispatchToProps = (dispatch) => ({
+	setSnackNotification: bindActionCreators(setSnackNotification, dispatch),
+});
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(withEdit(withConfig(withRouter(SmartTarget))));

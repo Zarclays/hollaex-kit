@@ -11,7 +11,7 @@ import {
 	otpActivate,
 	otpSetActivated,
 	otpRevoke,
-} from '../../actions/userAction';
+} from 'actions/userAction';
 import {
 	// CustomTabs,
 	CustomMobileTabs,
@@ -25,8 +25,9 @@ import {
 	HeaderSection,
 	Button,
 	TabController,
-} from '../../components';
-import { errorHandler } from '../../components/OtpForm/utils';
+	EditWrapper,
+} from 'components';
+import { errorHandler } from 'components/OtpForm/utils';
 import ChangePasswordForm, { generateFormValues } from './ChangePasswordForm';
 import { OTP, renderOTPForm } from './OTP';
 import { DeveloperSection } from './DeveloperSection';
@@ -35,9 +36,9 @@ import { DeveloperSection } from './DeveloperSection';
 import { generateLogins } from './utils_logins';
 import { RECORD_LIMIT } from './constants';
 import LoginDisplay from './LoginDisplay';
-import { getUserLogins } from '../../actions/userAction';
+import { getUserLogins } from 'actions/userAction';
 
-import STRINGS from '../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 // import { ICONS } from 'config/constants';
 
@@ -52,6 +53,7 @@ class UserVerification extends Component {
 		activeTab: 0,
 		jumpToPage: 0,
 		freeze: false,
+		error: '',
 		updatedPassword: {},
 	};
 
@@ -101,10 +103,16 @@ class UserVerification extends Component {
 			prevProps.user.otp.requesting !== this.props.user.otp.requesting ||
 			prevProps.user.otp.activated !== this.props.user.otp.activated ||
 			prevProps.user.otp_enabled !== this.props.user.otp_enabled ||
+			prevState.error !== this.state.error ||
 			prevProps.activeLanguage !== this.props.activeLanguage ||
 			this.state.activeTab !== prevState.activeTab
 		) {
 			this.calculateTabs(this.props.user, this.state.activeTab);
+		}
+		if (this.state.activeTab !== prevState.activeTab) {
+			this.setState({
+				error: undefined,
+			});
 		}
 		if (
 			JSON.stringify(prevState.activeTab) !==
@@ -183,7 +191,9 @@ class UserVerification extends Component {
 					// 	title={STRINGS['ACCOUNT_SECURITY.OTP.TITLE']}
 					// 	icon={ICONS.SECURITY_OTP_ICON}
 					// />
-					<div>{STRINGS['ACCOUNT_SECURITY.OTP.TITLE']}</div>
+					<EditWrapper stringId="ACCOUNT_SECURITY.OTP.TITLE">
+						{STRINGS['ACCOUNT_SECURITY.OTP.TITLE']}
+					</EditWrapper>
 				),
 				content: activeTab === 0 && (
 					<OTP
@@ -232,10 +242,13 @@ class UserVerification extends Component {
 					// 	title={STRINGS['ACCOUNT_SECURITY.CHANGE_PASSWORD.TITLE']}
 					// 	icon={ICONS.SECURITY_CHANGE_PASSWORD_ICON}
 					// />
-					<div>{STRINGS['ACCOUNT_SECURITY.CHANGE_PASSWORD.TITLE']}</div>
+					<EditWrapper stringId="ACCOUNT_SECURITY.CHANGE_PASSWORD.TITLE">
+						{STRINGS['ACCOUNT_SECURITY.CHANGE_PASSWORD.TITLE']}
+					</EditWrapper>
 				),
 				content: activeTab === 1 && (
 					<ChangePasswordForm
+						_error={this.state.error}
 						onSubmit={this.onSubmitChangePassword}
 						formFields={formValues}
 					/>
@@ -264,7 +277,9 @@ class UserVerification extends Component {
 					// 	title={STRINGS['DEVELOPER_SECTION.TITLE']}
 					// 	icon={ICONS.SECURITY_API_ICON}
 					// />
-					<div>{STRINGS['DEVELOPER_SECTION.TITLE']}</div>
+					<EditWrapper stringId="DEVELOPER_SECTION.TITLE">
+						{STRINGS['DEVELOPER_SECTION.TITLE']}
+					</EditWrapper>
 				),
 				content: activeTab === 2 && (
 					<DeveloperSection
@@ -381,16 +396,21 @@ class UserVerification extends Component {
 			});
 	};
 
+	setOtpModalsState = (values) => {
+		this.setState({
+			dialogIsOpen: true,
+			modalText: undefined,
+			updatedPassword: {
+				old_password: values.old_password,
+				new_password: values.new_password,
+			},
+		});
+	};
+
 	onSubmitChangePassword = (values) => {
 		const { otp_enabled } = this.props.user;
 		if (otp_enabled) {
-			this.setState({
-				dialogIsOpen: true,
-				updatedPassword: {
-					old_password: values.old_password,
-					new_password: values.new_password,
-				},
-			});
+			this.setOtpModalsState(values);
 		} else {
 			return resetPassword({
 				old_password: values.old_password,
@@ -448,6 +468,12 @@ class UserVerification extends Component {
 							: err.message;
 					if (!_error) {
 						message.error(STRINGS['CHANGE_PASSWORD_FAILED']);
+					}
+					if (_error !== 'Invalid OTP Code') {
+						this.setState({
+							dialogIsOpen: false,
+							error: _error,
+						});
 					}
 					throw new SubmissionError({ _error });
 				});
@@ -598,7 +624,9 @@ class UserVerification extends Component {
 					openContactForm={openContactForm}
 				>
 					<div className="header-content">
-						<div>{STRINGS['ACCOUNT_SECURITY.TITLE_TEXT']}</div>
+						<EditWrapper stringId="ACCOUNT_SECURITY.TITLE_TEXT">
+							{STRINGS['ACCOUNT_SECURITY.TITLE_TEXT']}
+						</EditWrapper>
 					</div>
 				</HeaderSection>
 
@@ -607,7 +635,6 @@ class UserVerification extends Component {
 					label="security-modal"
 					onCloseDialog={this.onCloseDialog}
 					showCloseText={!(otp.error || modalText)}
-					theme={this.props.activeTheme}
 				>
 					{dialogIsOpen && !otp.requesting ? (
 						this.renderModalContent(
@@ -647,7 +674,6 @@ const mapStateToProps = (state) => ({
 	logins: state.wallet.logins,
 	user: state.user,
 	activeLanguage: state.app.language,
-	activeTheme: state.app.theme,
 	constants: state.app.constants,
 });
 

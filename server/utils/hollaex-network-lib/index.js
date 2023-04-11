@@ -1952,7 +1952,7 @@ class HollaExNetwork {
 			this.apiExpiresAfter
 		);
 
-		return createRequest(verb, `${this.apiUrl}${path}`, headers);
+		return createRequest(verb, `${this.apiUrl}${path}`, headers, { data: null, formData: null }, 'chart');
 	}
 
 	/**
@@ -1989,7 +1989,7 @@ class HollaExNetwork {
 			this.apiExpiresAfter
 		);
 
-		return createRequest(verb, `${this.apiUrl}${path}`, headers);
+		return createRequest(verb, `${this.apiUrl}${path}`, headers, { data: null, formData: null }, 'charts');
 	}
 
 	/**
@@ -2167,6 +2167,9 @@ class HollaExNetwork {
 		transactionId: null,
 		address: null,
 		status: true,
+		dismissed: false,
+		rejected: false,
+		waiting: false,
 		email: true,
 		fee: null,
 		additionalHeaders: null
@@ -2205,6 +2208,24 @@ class HollaExNetwork {
 			data.status = opts.status;
 		} else {
 			data.status = true;
+		}
+
+		if (isBoolean(opts.rejected)) {
+			data.rejected = opts.rejected;
+		} else {
+			data.rejected = false;
+		}
+
+		if (isBoolean(opts.dismissed)) {
+			data.dismissed = opts.dismissed;
+		} else {
+			data.dismissed = false;
+		}
+
+		if (isBoolean(opts.waiting)) {
+			data.waiting = opts.waiting;
+		} else {
+			data.waiting = false;
 		}
 
 		if (isBoolean(opts.email)) {
@@ -2272,9 +2293,7 @@ class HollaExNetwork {
 		const processing = isBoolean(opts.processing) ? opts.processing : false;
 		const waiting = isBoolean(opts.waiting) ? opts.waiting : false;
 
-		if (!status && !rejected && !dismissed && !processing && !waiting) {
-			return reject(new Error('Must give one parameter to update'));
-		} else if (
+		if (
 			status && (rejected || dismissed || processing || waiting)
 			|| rejected && (status || dismissed || processing || waiting)
 			|| dismissed && (status || rejected || processing || waiting)
@@ -2345,6 +2364,9 @@ class HollaExNetwork {
 		transactionId: null,
 		address: null,
 		status: true,
+		dismissed: false,
+		rejected: false,
+		waiting: false,
 		email: true,
 		fee: null,
 		additionalHeaders: null
@@ -2383,6 +2405,24 @@ class HollaExNetwork {
 			data.status = opts.status;
 		} else {
 			data.status = true;
+		}
+
+		if (isBoolean(opts.rejected)) {
+			data.rejected = opts.rejected;
+		} else {
+			data.rejected = false;
+		}
+
+		if (isBoolean(opts.dismissed)) {
+			data.dismissed = opts.dismissed;
+		} else {
+			data.dismissed = false;
+		}
+
+		if (isBoolean(opts.waiting)) {
+			data.waiting = opts.waiting;
+		} else {
+			data.waiting = false;
 		}
 
 		if (isBoolean(opts.email)) {
@@ -2450,9 +2490,7 @@ class HollaExNetwork {
 		const processing = isBoolean(opts.processing) ? opts.processing : false;
 		const waiting = isBoolean(opts.waiting) ? opts.waiting : false;
 
-		if (!status && !rejected && !dismissed && !processing && !waiting) {
-			return reject(new Error('Must give one parameter to update'));
-		} else if (
+		if (
 			status && (rejected || dismissed || processing || waiting)
 			|| rejected && (status || dismissed || processing || waiting)
 			|| dismissed && (status || rejected || processing || waiting)
@@ -2620,7 +2658,7 @@ class HollaExNetwork {
 			this.apiExpiresAfter
 		);
 
-		return createRequest(verb, `${this.apiUrl}${path}`, headers);
+		return createRequest(verb, `${this.apiUrl}${path}`, headers, { data: null, formData: null }, 'oracle');
 	}
 
 	getConstants(opts = {
@@ -3266,6 +3304,29 @@ class HollaExNetwork {
 		);
 
 		return createRequest(verb, `${this.apiUrl}${path}`, headers, { formData });
+	}
+
+	async generateDashToken(opts = {
+		additionalHeaders: null
+	}) {
+		checkKit(this.exchange_id);
+
+		const verb = 'GET';
+		const path = `${this.baseUrl}/network/${
+			this.exchange_id
+		}/jwt`;
+		
+
+
+		const headers = generateHeaders(
+			isPlainObject(opts.additionalHeaders) ? { ...this.headers, ...opts.additionalHeaders } : this.headers,
+			this.apiSecret,
+			verb,
+			path,
+			this.apiExpiresAfter
+		);
+
+		return createRequest(verb, `${this.apiUrl}${path}`, headers);
 	}
 
 	/**

@@ -13,11 +13,8 @@ import {
 	// formatBaseAmount,
 	roundNumber,
 	formatToCurrency,
-} from '../../../utils/currency';
-import {
-	getDecimals,
-	playBackgroundAudioNotification,
-} from '../../../utils/utils';
+} from 'utils/currency';
+import { getDecimals, playBackgroundAudioNotification } from 'utils/utils';
 import {
 	evaluateOrder,
 	required,
@@ -28,14 +25,13 @@ import {
 	checkMarketPrice,
 	step,
 	normalizeFloat,
-} from '../../../components/Form/validations';
-import { Loader, Tooltip } from '../../../components';
-import { takerFee, DEFAULT_COIN_DATA } from '../../../config/constants';
+} from 'components/Form/validations';
+import { Loader, Tooltip, EditWrapper } from 'components';
+import { takerFee, DEFAULT_COIN_DATA } from 'config/constants';
 
-import STRINGS from '../../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 import { SIDES, TYPES } from 'config/options';
-import { isLoggedIn } from '../../../utils/token';
-import { openFeesStructureandLimits } from '../../../actions/appActions';
+import { isLoggedIn } from 'utils/token';
 import { orderbookSelector, marketPriceSelector } from '../utils';
 import { setOrderEntryData } from 'actions/orderbookAction';
 
@@ -344,21 +340,18 @@ class OrderEntry extends Component {
 
 	onReview = () => {
 		const {
-			// showPopup,
 			type,
 			side,
 			price,
 			size,
-			// pair,
 			pair_base,
-			pair_2,
 			increment_size,
 			increment_price,
 			openCheckOrder,
 			onRiskyTrade,
 			submit,
 			settings: { risk = {}, notification = {} },
-			balance,
+			totalAsset,
 		} = this.props;
 		const orderTotal = mathjs.add(
 			mathjs.fraction(this.state.orderPrice),
@@ -373,15 +366,8 @@ class OrderEntry extends Component {
 			orderPrice: orderTotal,
 			orderFees: this.state.orderFees,
 		};
-		// const orderPriceInBaseCoin = calculatePrice(orderTotal, this.props.prices[pair_2]);
-		let coin_balance = 0;
-		if (side === 'buy') {
-			coin_balance = balance[`${pair_2.toLowerCase()}_balance`];
-		} else {
-			coin_balance = balance[`${pair_base.toLowerCase()}_balance`];
-		}
-		// const riskySize = ((this.props.totalAsset / 100) * risk.order_portfolio_percentage);
-		let riskySize = (coin_balance / 100) * risk.order_portfolio_percentage;
+
+		let riskySize = (totalAsset / 100) * risk.order_portfolio_percentage;
 		riskySize = formatNumber(riskySize, getDecimals(increment_size));
 
 		if (type === 'market') {
@@ -411,10 +397,12 @@ class OrderEntry extends Component {
 	};
 
 	reset = () => {
-		const { change } = this.props;
+		const { change, resetSlider } = this.props;
+		this.setState({ sliderVal: 0 });
 		change(FORM_NAME, 'stop', '');
 		change(FORM_NAME, 'price', '');
 		change(FORM_NAME, 'size', '');
+		resetSlider();
 	};
 
 	handleOrderBookChange = (name, value) => {
@@ -438,20 +426,15 @@ class OrderEntry extends Component {
 			increment_price,
 			min_price,
 			max_price,
-			coins,
 			pair_base,
 			pair_2,
 			pair_base_display,
 			pair_2_display,
 			balance = {},
 			marketPrice,
-			pair = '',
 			side = 'buy',
 		} = props;
 
-		const { display_name } = coins[pair] || DEFAULT_COIN_DATA;
-		const { display_name: buy_display_name } =
-			coins[buyingPair] || DEFAULT_COIN_DATA;
 		const {
 			initialValues: { order_type },
 		} = this.state;
@@ -526,16 +509,20 @@ class OrderEntry extends Component {
 					maxValue(max_price),
 					step(increment_price),
 				],
-				currency: buy_display_name,
+				currency: pair_2_display,
 				setRef: this.props.setPriceRef,
 			},
 			size: {
 				name: 'size',
 				label: (
 					<div className="d-flex justify-content-between">
-						<div className="d-flex">{STRINGS['SIZE']}</div>
+						<div className="d-flex">
+							<EditWrapper stringId="SIZE">{STRINGS['SIZE']}</EditWrapper>
+						</div>
 						<div>
-							{STRINGS['BALANCE_TEXT']}{' '}
+							<EditWrapper stringId="BALANCE_TEXT">
+								{STRINGS['BALANCE_TEXT']}
+							</EditWrapper>{' '}
 							<span
 								className="pointer text-uppercase blue-link"
 								onClick={() => this.setMax()}
@@ -561,19 +548,25 @@ class OrderEntry extends Component {
 				min: min_size,
 				max: max_size,
 				validate: [required, minValue(min_size), maxValue(max_size)],
-				currency: display_name,
+				currency: pair_base_display,
 				setRef: this.props.setSizeRef,
 			},
 			slider: {
 				name: 'size-slider',
 				type: 'slider',
 				onClick: this.setMax,
+				value: 0,
+				setRef: this.props.setSliderRef,
 			},
 			postOnly: {
 				name: 'post_only',
 				label: (
 					<Tooltip text={STRINGS['POST_ONLY_TOOLTIP']} className="light-theme">
-						<span className="px-1 post-only-txt">{STRINGS['POST_ONLY']}</span>
+						<span className="px-1 post-only-txt">
+							<EditWrapper stringId="POST_ONLY">
+								{STRINGS['POST_ONLY']}
+							</EditWrapper>
+						</span>
 					</Tooltip>
 				),
 				type: 'checkbox',
@@ -592,14 +585,11 @@ class OrderEntry extends Component {
 	};
 
 	onFeeStructureAndLimits = () => {
+		const { router } = this.props;
+
 		if (isLoggedIn()) {
-			const {
-				openFeesStructureandLimits,
-				user: { verification_level, discount = 0 },
-			} = this.props;
-			openFeesStructureandLimits({ verification_level, discount });
+			router.push('/fees-and-limits');
 		} else {
-			const { router } = this.props;
 			router.push('/login');
 		}
 	};
@@ -715,17 +705,13 @@ const mapStateToProps = (state) => {
 		bids,
 		marketPrice,
 		order_entry_data: state.orderbook.order_entry_data,
-		// totalAsset: state.asset.totalAsset
+		totalAsset: state.asset.totalAsset,
 	};
 };
 
 const mapDispatchToProps = (dispatch) => ({
 	submit: bindActionCreators(submit, dispatch),
 	change: bindActionCreators(change, dispatch),
-	openFeesStructureandLimits: bindActionCreators(
-		openFeesStructureandLimits,
-		dispatch
-	),
 	setOrderEntryData: bindActionCreators(setOrderEntryData, dispatch),
 });
 

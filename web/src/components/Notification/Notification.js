@@ -1,10 +1,8 @@
 import React from 'react';
 import classnames from 'classnames';
 import { isMobile } from 'react-device-detect';
-import { Button } from '../';
-import STRINGS from '../../config/localizedStrings';
-import Image from 'components/Image';
-import { EditWrapper } from 'components';
+import STRINGS from 'config/localizedStrings';
+import { EditWrapper, Button, Image } from 'components';
 
 export const NotificationWraperDesktop = ({
 	icon,
@@ -67,7 +65,7 @@ export const NotificationWraperMobile = ({
 					titleClassName
 				)}
 			>
-				{title}
+				<EditWrapper>{title}</EditWrapper>
 			</div>
 			{children}
 		</div>

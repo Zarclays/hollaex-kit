@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
-import classnames from 'classnames';
+import { Link } from 'react-router';
 import { connect } from 'react-redux';
 import { isMobile } from 'react-device-detect';
+import classnames from 'classnames';
+
 import {
 	IconTitle,
 	// CurrencyBallWithPrice,
@@ -9,14 +11,15 @@ import {
 	ActionNotification,
 	MobileBarBack,
 	Image,
-} from '../../components';
-import { FLEX_CENTER_CLASSES, DEFAULT_COIN_DATA } from '../../config/constants';
+	EditWrapper,
+} from 'components';
+import { FLEX_CENTER_CLASSES, DEFAULT_COIN_DATA } from 'config/constants';
 import {
 	formatToCurrency,
 	generateWalletActionsText,
 	getCurrencyFromName,
-} from '../../utils/currency';
-import STRINGS from '../../config/localizedStrings';
+} from 'utils/currency';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 import { STATIC_ICONS } from 'config/icons';
 
@@ -25,7 +28,7 @@ class Wallet extends Component {
 		currency: '',
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		this.setCurrency(this.props.routeParams.currency);
 	}
 
@@ -51,7 +54,9 @@ class Wallet extends Component {
 		return (
 			<div className="wallet-header_block">
 				<div className="wallet-header_block-currency_title">
-					{STRINGS.formatString(STRINGS['CURRENCY_BALANCE_TEXT'], fullname)}
+					<EditWrapper stringId="CURRENCY_BALANCE_TEXT">
+						{STRINGS.formatString(STRINGS['CURRENCY_BALANCE_TEXT'], fullname)}
+					</EditWrapper>
 					<ActionNotification
 						stringId="TRADE_HISTORY"
 						text={STRINGS['TRADE_HISTORY']}
@@ -64,6 +69,27 @@ class Wallet extends Component {
 						}}
 					/>
 				</div>
+				<div className="link-container mb-0 mt-3">
+					<EditWrapper stringId="CURRENCY_WALLET.WALLET_PAGE">
+						{STRINGS.formatString(
+							STRINGS['CURRENCY_WALLET.WALLET_PAGE'],
+							<Link className="link-content" to="wallet">
+								{STRINGS['CURRENCY_WALLET.BACK']}
+							</Link>
+						)}
+					</EditWrapper>
+				</div>
+				<div className="link-container mb-5">
+					<EditWrapper stringId="CURRENCY_WALLET.ABOUT">
+						{STRINGS.formatString(
+							STRINGS['CURRENCY_WALLET.ABOUT'],
+							<Link to={`/assets/coin/${symbol}`} className="link-content">
+								{STRINGS['CURRENCY_WALLET.LEARN_MORE']}
+							</Link>
+						)}
+					</EditWrapper>{' '}
+					{symbol.toUpperCase()}
+				</div>
 				{/* <CurrencyBallWithPrice
 					symbol={symbol}
 					amount={balanceValue}
@@ -74,6 +100,8 @@ class Wallet extends Component {
 						iconId={icon_id}
 						icon={ICONS[icon_id]}
 						wrapperClassName="coin-icons"
+						width="32px"
+						height="32px"
 						imageWrapperClassName="currency-ball-image-wrapper"
 					/>
 					<div className="with_price-block_amount-value">

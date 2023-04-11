@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { connect } from 'react-redux';
 import { Select, Form, Row, DatePicker, Radio } from 'antd';
 import { CaretDownOutlined } from '@ant-design/icons';
 import moment from 'moment';
 
 import { dateFilters } from '../filterUtils';
-import STRINGS from '../../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
+import { Image } from 'hollaex-web-lib';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-const Filters = ({ pairs, onSearch, formName, activeTab }) => {
+const Filters = ({ pairs, onSearch, formName, activeTab, icons: ICONS }) => {
 	const [form] = Form.useForm();
 	const [click, setClick] = useState([]);
 	const [customSel, setCustomSel] = useState(false);
@@ -19,6 +21,7 @@ const Filters = ({ pairs, onSearch, formName, activeTab }) => {
 			status: null,
 			currency: null,
 			size: 'all',
+			type: 'closed',
 		});
 		setCustomSel(false);
 	}, [activeTab, form]);
@@ -44,7 +47,7 @@ const Filters = ({ pairs, onSearch, formName, activeTab }) => {
 				setCustomSel(false);
 				const {
 					[values.size]: { range },
-				} = dateFilters;
+				} = dateFilters();
 				form.setFieldsValue({ range });
 				values.range = range;
 				if (_.range === undefined) {
@@ -104,7 +107,7 @@ const Filters = ({ pairs, onSearch, formName, activeTab }) => {
 			initialValues={{
 				symbol: null,
 				size: 'all',
-				type: 'active',
+				type: 'closed',
 			}}
 		>
 			<Row gutter={24}>
@@ -149,24 +152,34 @@ const Filters = ({ pairs, onSearch, formName, activeTab }) => {
 							width: 100,
 						}}
 						size="small"
-						className="custom-select-input-style elevated"
+						className="custom-select-input-style elevated filter-dropdown"
 						dropdownClassName="custom-select-style"
 						bordered={false}
 						suffixIcon={<CaretDownOutlined />}
 					>
 						<Option value={null}>{STRINGS['ALL']}</Option>
 						{Object.entries(pairs).map(
-							([_, { name, pair_base_display, pair_2_display }]) => (
+							([_, { name, pair_base_display, pair_2_display, icon_id }]) => (
 								<Option key={name} value={name}>
-									{`${pair_base_display}-${pair_2_display}`}
+									<div className="d-flex filter-option">
+										<Image
+											width="16px"
+											height="16px"
+											iconId={icon_id}
+											icon={ICONS[icon_id]}
+											wrapperClassName="coin-icons"
+											imageWrapperClassName="currency-ball-image-wrapper"
+										/>
+										<div>{`${pair_base_display}-${pair_2_display}`}</div>
+									</div>
 								</Option>
 							)
 						)}
 					</Select>
 				</Form.Item>
 				<Form.Item name="size">
-					<Radio.Group buttonStyle="outline" size="small">
-						{Object.entries(dateFilters).map(([key, { name }]) => (
+					<Radio.Group size="small">
+						{Object.entries(dateFilters()).map(([key, { name }]) => (
 							<Radio.Button key={key} value={key}>
 								{name}
 							</Radio.Button>
@@ -175,7 +188,6 @@ const Filters = ({ pairs, onSearch, formName, activeTab }) => {
 				</Form.Item>
 				<Form.Item
 					name="custom"
-					buttonStyle="outline"
 					size="small"
 					onClick={() => Customselection('custom')}
 					className={customSel ? 'cusStyle1' : 'cusStyle2'}
@@ -198,4 +210,8 @@ const Filters = ({ pairs, onSearch, formName, activeTab }) => {
 	);
 };
 
-export default Filters;
+const mapStateToProps = (state) => ({
+	activeLanguage: state.app.language,
+});
+
+export default connect(mapStateToProps)(Filters);

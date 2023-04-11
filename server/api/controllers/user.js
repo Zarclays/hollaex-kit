@@ -27,7 +27,7 @@ const {
 	USER_EMAIL_IS_VERIFIED,
 	INVALID_VERIFICATION_CODE
 } = require('../../messages');
-const { DEFAULT_ORDER_RISK_PERCENTAGE, EVENTS_CHANNEL, API_HOST, DOMAIN } = require('../../constants');
+const { DEFAULT_ORDER_RISK_PERCENTAGE, EVENTS_CHANNEL, API_HOST, DOMAIN, TOKEN_TIME_NORMAL, TOKEN_TIME_LONG, HOLLAEX_NETWORK_BASE_URL } = require('../../constants');
 const { all } = require('bluebird');
 const { each } = require('lodash');
 const { publisher } = require('../../db/pubsub');
@@ -296,15 +296,45 @@ const loginPost = (req, res) => {
 		password,
 		otp_code,
 		captcha,
-		service
+		service,
+		long_term
 	} = req.swagger.params.authentication.value;
-	let { email } = req.swagger.params.authentication.value;
+	let {
+		email
+	} = req.swagger.params.authentication.value;
+
 	const ip = req.headers['x-real-ip'];
 	const device = req.headers['user-agent'];
 	const domain = req.headers['x-real-origin'];
 	const origin = req.headers.origin;
 	const referer = req.headers.referer;
 	const time = new Date();
+
+	loggerUser.verbose(
+		req.uuid,
+		'controllers/user/loginPost',
+		'email',
+		email,
+		'otp_code',
+		otp_code,
+		'captcha',
+		captcha,
+		'service',
+		service,
+		'long_term',
+		long_term,
+		'ip',
+		ip,
+		'device',
+		device,
+		'domain',
+		domain,
+		'origin',
+		origin,
+		'referer',
+		referer
+	);
+
 
 	if (!email || typeof email !== 'string' || !isEmail(email)) {
 		loggerUser.error(
@@ -394,7 +424,8 @@ const loginPost = (req, res) => {
 					user.is_support,
 					user.is_supervisor,
 					user.is_kyc,
-					user.is_communicator
+					user.is_communicator,
+					long_term ? TOKEN_TIME_LONG : TOKEN_TIME_NORMAL
 				)
 			});
 		})
@@ -505,9 +536,9 @@ const resetPassword = (req, res) => {
 
 const getUser = (req, res) => {
 	loggerUser.debug(req.uuid, 'controllers/user/getUser', req.auth.sub);
-	const email = req.auth.sub.email;
+	const id = req.auth.sub.id;
 
-	toolsLib.user.getUserByEmail(email, true, true, {
+	toolsLib.user.getUserByKitId(id, true, true, {
 		additionalHeaders: {
 			'x-forwarded-for': req.headers['x-forwarded-for']
 		}
@@ -547,7 +578,7 @@ const changePassword = (req, res) => {
 	const email = req.auth.sub.email;
 	const { old_password, new_password, otp_code } = req.swagger.params.data.value;
 	const ip = req.headers['x-real-ip'];
-	const domain = `${API_HOST}${req.swagger.swaggerObject.basePath}`;
+	const domain = API_HOST + HOLLAEX_NETWORK_BASE_URL;
 
 	loggerUser.verbose(
 		req.uuid,
@@ -659,10 +690,21 @@ const affiliationCount = (req, res) => {
 	loggerUser.debug(req.uuid, 'controllers/user/affiliationCount auth', req.auth.sub);
 
 	const user_id = req.auth.sub.id;
-	toolsLib.user.getAffiliationCount(user_id)
-		.then((num) => {
-			loggerUser.verbose(req.uuid, 'controllers/user/affiliationCount', num);
-			return res.json({ count: num });
+
+	const { limit, page, order_by, order, start_date, end_date } = req.swagger.params;
+
+
+	toolsLib.user.getAffiliationCount(user_id, {
+		limit: limit.value,
+		page: page.value,
+		order_by: order_by.value,
+		order: order.value,
+		start_date: start_date.value,
+		end_date: end_date.value
+	})
+		.then((data) => {
+			loggerUser.verbose(req.uuid, 'controllers/user/affiliationCount count', data.count);
+			return res.json(data);
 		})
 		.catch((err) => {
 			loggerUser.error(req.uuid, 'controllers/user/affiliationCount', err.message);
@@ -842,12 +884,12 @@ function updateHmacToken(req, res) {
 		ip
 	);
 
-	whitelisted_ips.forEach((ip) => {
+	whitelisted_ips?.forEach((ip) => {
 		if (!toolsLib.validateIp(ip)) {
 			return res.status(400).json({ message: 'IP address is not valid.' });
 		}
 	});
-	
+
 	toolsLib.security.confirmByEmail(userId, email_code)
 		.then((confirmed) => {
 			if (confirmed) {
@@ -1002,7 +1044,7 @@ const userCheckTransaction = (req, res) => {
 		});
 };
 
-const addUserBank = (req, res) =>  {
+const addUserBank = (req, res) => {
 	loggerUser.verbose(
 		req.uuid,
 		'controllers/user/addUserBank auth',
@@ -1024,26 +1066,26 @@ const addUserBank = (req, res) =>  {
 			}
 
 			if (!toolsLib.getKitConfig().user_payments) {
-				throw new Error ('Payment system fields are not defined yet');
+				throw new Error('Payment system fields are not defined yet');
 			}
 
 			if (!toolsLib.getKitConfig().user_payments[data.type]) {
-				throw new Error ('Payment system fields are not defined yet');
+				throw new Error('Payment system fields are not defined yet');
 			}
 
 			each(toolsLib.getKitConfig().user_payments[data.type].data, ({ required, key }) => {
 				if (required && !Object.prototype.hasOwnProperty.call(data, key)) {
-					throw new Error (`Missing field: ${key}`);
+					throw new Error(`Missing field: ${key}`);
 				}
 				if (Object.prototype.hasOwnProperty.call(data, key)) {
 					bank_account[key] = data[key];
 				}
 			});
-		
+
 			if (Object.keys(bank_account).length === 0) {
-				throw new Error ('No payment system fields to add');
+				throw new Error('No payment system fields to add');
 			}
-			
+
 			bank_account.id = crypto.randomBytes(8).toString('hex');
 			bank_account.status = VERIFY_STATUS.PENDING;
 

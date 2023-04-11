@@ -7,16 +7,15 @@ import {
 	// CsvDownload,
 	Loader,
 	Dialog,
-} from '../../components';
+	EditWrapper,
+} from 'components';
 import classnames from 'classnames';
 import { SubmissionError } from 'redux-form';
-
-import STRINGS from '../../config/localizedStrings';
-import { EditWrapper } from 'components';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 import { STATIC_ICONS } from 'config/icons';
 import { searchTransaction } from 'actions/walletActions';
-import CheckDeposit from '../../components/CheckDeposit';
+import CheckDeposit from 'components/CheckDeposit';
 
 const HistoryDisplay = (props) => {
 	const {
@@ -30,8 +29,12 @@ const HistoryDisplay = (props) => {
 		handleNext,
 		jumpToPage,
 		handleDownload,
+		refetchData,
 		icons: ICONS,
 		activeTab,
+		rowKey,
+		expandableRow,
+		expandableContent,
 	} = props;
 
 	const [dialogIsOpen, setDialogOpen] = useState(false);
@@ -43,8 +46,13 @@ const HistoryDisplay = (props) => {
 		setLoading(true);
 		setInitialValues(params);
 		setMessage('');
+		const address = params.address.trim();
+
 		return searchTransaction({
 			...params,
+			address: params.destination_tag
+				? `${address}:${params.destination_tag}`
+				: address,
 			network: params.network ? params.network : params.currency,
 		})
 			.then((res) => {
@@ -76,27 +84,39 @@ const HistoryDisplay = (props) => {
 				<div className="title text-capitalize">
 					<EditWrapper stringId={stringId}>{title}</EditWrapper>
 					{count > 0 && (
-						<div className='download-icon'>
+						<div className="download-icon">
 							<ActionNotification
 								stringId="TRANSACTION_HISTORY.TEXT_DOWNLOAD"
 								text={STRINGS['TRANSACTION_HISTORY.TEXT_DOWNLOAD']}
 								iconId="DATA"
 								iconPath={ICONS['DATA']}
-								className="csv-action"
+								className="download-history"
 								onClick={handleDownload}
 							/>
 						</div>
 					)}
-					{activeTab === 2 ? (
+					{activeTab === 2 && (
+						<div className="download-icon">
+							<ActionNotification
+								stringId="DEPOSIT_STATUS.CHECK_DEPOSIT_STATUS"
+								text={STRINGS['DEPOSIT_STATUS.CHECK_DEPOSIT_STATUS']}
+								iconId="SEARCH"
+								iconPath={STATIC_ICONS.SEARCH}
+								className={count > 0 ? 'check-deposit-txt' : ''}
+								onClick={openDialog}
+							/>
+						</div>
+					)}
+					<div className="download-icon">
 						<ActionNotification
-							stringId="DEPOSIT_STATUS.CHECK_DEPOSIT_STATUS"
-							text={STRINGS['DEPOSIT_STATUS.CHECK_DEPOSIT_STATUS']}
-							iconId="SEARCH"
-							iconPath={STATIC_ICONS.SEARCH}
-							className={count > 0 ? 'check-deposit-txt' : ''}
-							onClick={openDialog}
+							stringId="REFRESH"
+							text={STRINGS['REFRESH']}
+							iconId="REFRESH"
+							iconPath={STATIC_ICONS['REFRESH']}
+							className="refresh-history"
+							onClick={refetchData}
 						/>
-					) : null}
+					</div>
 				</div>
 			)}
 			{filters}
@@ -110,12 +130,12 @@ const HistoryDisplay = (props) => {
 					headers={headers}
 					withIcon={withIcon}
 					pageSize={TABLE_PAGE_SIZE}
-					rowKey={(data) => {
-						return data.id;
-					}}
+					rowKey={rowKey}
 					title={title}
 					handleNext={handleNext}
 					jumpToPage={jumpToPage}
+					noData={props.noData}
+					expandable={expandableRow && expandableContent()}
 				/>
 			)}
 			<Dialog
@@ -126,8 +146,8 @@ const HistoryDisplay = (props) => {
 				shouldCloseOnOverlayClick={false}
 				style={{ 'z-index': 100 }}
 			>
-				{dialogIsOpen
-					? <CheckDeposit
+				{dialogIsOpen && (
+					<CheckDeposit
 						onCloseDialog={onCloseDialog}
 						onSubmit={requestDeposit}
 						message={statusMessage}
@@ -135,8 +155,7 @@ const HistoryDisplay = (props) => {
 						initialValues={initialValue}
 						props={props}
 					/>
-					: null
-				}
+				)}
 			</Dialog>
 		</div>
 	);

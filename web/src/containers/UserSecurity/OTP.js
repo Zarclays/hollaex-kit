@@ -1,10 +1,9 @@
 import React from 'react';
-import { CheckboxButton, IconTitle } from '../../components';
+import { CheckboxButton, IconTitle, EditWrapper } from 'components';
 import QRCode from 'qrcode.react';
 import OTPForm from './OTPForm';
-import { EditWrapper } from 'components';
-
-import STRINGS from '../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
+import { Image } from 'hollaex-web-lib';
 
 export const renderOTPForm = (
 	secret,
@@ -26,8 +25,11 @@ export const renderOTPForm = (
 			/>
 			<div className="otp_form-section-wrapper">
 				<div className="otp_form-section-title">
-					<EditWrapper stringId="ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_1">
-						<span>{STRINGS['ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_1']}</span>
+					<EditWrapper
+						stringId="ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_1"
+						render={(string) => <span>{string}</span>}
+					>
+						{STRINGS['ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_1']}
 					</EditWrapper>
 				</div>
 				<div className="otp_form-section-text">
@@ -46,14 +48,19 @@ export const renderOTPForm = (
 			</div>
 			<div className="otp_form-section-wrapper">
 				<div className="otp_form-section-title">
-					<EditWrapper stringId="ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_5">
-						<span>{STRINGS['ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_5']}</span>
+					<EditWrapper
+						stringId="ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_5"
+						render={(string) => <span>{string}</span>}
+					>
+						{STRINGS['ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_5']}
 					</EditWrapper>
 				</div>
 				<div className="otp_form-section-text">
-					<EditWrapper stringId="ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_3,ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_4">
+					<EditWrapper stringId="ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_3">
 						{STRINGS['ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_3']}
-						<br />
+					</EditWrapper>
+					<br />
+					<EditWrapper stringId="ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_4">
 						{STRINGS['ACCOUNT_SECURITY.OTP.CONTENT.MESSAGE_4']}
 					</EditWrapper>
 				</div>
@@ -61,8 +68,11 @@ export const renderOTPForm = (
 			</div>
 			<div className="otp_form-section-wrapper">
 				<div className="otp_form-section-title">
-					<EditWrapper stringId="ACCOUNT_SECURITY.OTP.CONTENT.INPUT">
-						<span>{STRINGS['ACCOUNT_SECURITY.OTP.CONTENT.INPUT']}</span>
+					<EditWrapper
+						stringId="ACCOUNT_SECURITY.OTP.CONTENT.INPUT"
+						render={(string) => <span>{string}</span>}
+					>
+						{STRINGS['ACCOUNT_SECURITY.OTP.CONTENT.INPUT']}
 					</EditWrapper>
 				</div>
 				<OTPForm onSubmit={activateOTP} />
@@ -88,20 +98,32 @@ export const OTP = ({
 				</div>
 			)}
 		</div>
-		<CheckboxButton
-			stringId="ACCOUNT_SECURITY.OTP.CONTENT.ENABLE,ACCOUNT_SECURITY.OTP.CONTENT.DISABLE"
-			label={
-				STRINGS[
-					`ACCOUNT_SECURITY.OTP.CONTENT.${otp_enabled ? 'DISABLE' : 'ENABLE'}`
-				]
-			}
-			onClick={requestOTP}
-			disabled={data.requesting}
-			loading={data.requesting}
-			checked={otp_enabled}
-			icons={icons}
-		>
-			{children}
-		</CheckboxButton>
+		<div className="d-flex w-100 justify-content-center align-items-center mt-5">
+			<CheckboxButton
+				stringId="ACCOUNT_SECURITY.OTP.CONTENT.ENABLE,ACCOUNT_SECURITY.OTP.CONTENT.DISABLE"
+				label={
+					STRINGS[
+						`ACCOUNT_SECURITY.OTP.CONTENT.${otp_enabled ? 'DISABLE' : 'ENABLE'}`
+					]
+				}
+				onClick={requestOTP}
+				disabled={data.requesting}
+				loading={data.requesting}
+				checked={otp_enabled}
+				icons={icons}
+				customCheckIcon="SECURE"
+			>
+				{children}
+			</CheckboxButton>
+			{otp_enabled && (
+				<Image
+					iconId={'SUCCESS_BLACK'}
+					icon={icons['SUCCESS_BLACK']}
+					wrapperClassName="OTP_Success ml-2"
+					width="20px"
+					height="20px"
+				/>
+			)}
+		</div>
 	</div>
 );

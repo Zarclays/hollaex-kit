@@ -105,10 +105,9 @@ class PairTabs extends Component {
 								'app_bar-pair-content',
 								'd-flex',
 								'justify-content-between',
-								'px-2',
 								'market-trigger',
 								{
-									'active-tab-pair': location.pathname === '/trade/add/tabs',
+									'active-tab-pair': location.pathname === '/markets',
 								},
 								{
 									'active-market-trigger': activePairTab,
@@ -120,9 +119,7 @@ class PairTabs extends Component {
 								className="market-selector-dropdown"
 								overlay={
 									<MarketSelector
-										onViewMarketsClick={() =>
-											browserHistory.push('/trade/add/tabs')
-										}
+										onViewMarketsClick={() => browserHistory.push('/markets')}
 										addTradePairTab={this.onTabClick}
 										closeAddTabMenu={() =>
 											this.setState((prevState) =>

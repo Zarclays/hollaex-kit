@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Select } from 'antd';
-import { CaretDownOutlined } from '@ant-design/icons';
+import { CaretDownOutlined, CaretUpOutlined } from '@ant-design/icons';
+import { EditWrapper } from 'components';
 import STRINGS from 'config/localizedStrings';
 
 const { Option } = Select;
@@ -8,6 +9,7 @@ const { Option } = Select;
 // todo: add antd component to redux form
 
 const DropDown = (props) => {
+	const [isOpen, setIsOpen] = useState(false);
 	const {
 		input: { onChange, value },
 		options,
@@ -15,14 +17,20 @@ const DropDown = (props) => {
 	} = props;
 	return (
 		<div className="trade-form-select d-flex align-center justify-content-between">
-			<div style={{ width: '50%' }}>{STRINGS['ORDER_MODE']}:</div>
+			<div style={{ width: '50%' }}>
+				<EditWrapper stringId="ORDER_MODE">{STRINGS['ORDER_MODE']}</EditWrapper>
+				:
+			</div>
 			<div style={{ width: '50%' }}>
 				<Select
 					defaultValue={isOrderEntry ? value : options[0].value}
 					bordered={false}
 					size="small"
 					onChange={onChange}
-					suffixIcon={<CaretDownOutlined />}
+					onClick={() => {
+						setIsOpen((prev) => !prev);
+					}}
+					suffixIcon={isOpen ? <CaretUpOutlined /> : <CaretDownOutlined />}
 					className="custom-select-input-style w-100 elevated"
 					dropdownClassName="custom-select-style select-option-wrapper"
 				>
@@ -33,7 +41,7 @@ const DropDown = (props) => {
 							key={index}
 							className="d-flex"
 						>
-							{label}
+							<EditWrapper>{label}</EditWrapper>
 						</Option>
 					))}
 				</Select>

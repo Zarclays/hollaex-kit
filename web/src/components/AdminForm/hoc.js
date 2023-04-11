@@ -3,6 +3,7 @@ import renderFields from './utils';
 import { reduxForm, reset, getFormValues } from 'redux-form';
 import { Button } from 'antd';
 import { connect } from 'react-redux';
+import FormButton from 'components/FormButton/Button';
 
 const Form = (name, className = '', allowPristine = false) => {
 	const HocForm = ({
@@ -44,28 +45,38 @@ const Form = (name, className = '', allowPristine = false) => {
 					</div>
 				)}
 				{renderCustomFooter(formValues)}
-				{secondaryBtnTxt ? (
-					<Button type="primary" onClick={onClose} className={'green-btn'}>
-						{secondaryBtnTxt}
-					</Button>
-				) : null}
-				<Button
-					type={buttonType ? buttonType : 'primary'}
-					onClick={handleSubmit(onSubmit)}
-					disabled={
-						disableAllFields ||
-						(allowPristine ? false : fields && pristine) ||
-						submitting ||
-						!valid ||
-						error ||
-						buttonSubmitting
-					}
-					size={small ? 'small' : 'large'}
-					className={small ? `${buttonClass}` : `w-100 ${buttonClass}`}
-					style={small ? { float: 'right' } : null}
+				<div
+					className={secondaryBtnTxt ? 'd-flex justify-content-between' : ''}
 				>
-					{buttonText}
-				</Button>
+					{secondaryBtnTxt ? (
+						<Button
+							type="primary"
+							onClick={onClose}
+							className={`green-btn btn-48`}
+						>
+							{secondaryBtnTxt}
+						</Button>
+					) : null}
+					<FormButton
+						type={buttonType ? buttonType : 'primary'}
+						handleSubmit={handleSubmit(onSubmit)}
+						disabled={
+							disableAllFields ||
+							(allowPristine ? false : fields && pristine) ||
+							submitting ||
+							!valid ||
+							error ||
+							buttonSubmitting
+						}
+						size={small ? 'small' : 'large'}
+						className={`${small ? buttonClass : buttonClass} ${
+							secondaryBtnTxt ? 'btn-48' : 'w-100'
+						}`}
+						style={small ? { float: 'right' } : null}
+						buttonText={buttonText}
+						secondaryClassName={'w-100'}
+					/>
+				</div>
 			</form>
 		);
 	};
@@ -78,7 +89,7 @@ const Form = (name, className = '', allowPristine = false) => {
 	})(HocForm);
 
 	const mapStateToProps = (state) => ({
-		formValues: getFormValues(name)(state)
+		formValues: getFormValues(name)(state),
 	});
 	return connect(mapStateToProps)(CommonHocForm);
 };

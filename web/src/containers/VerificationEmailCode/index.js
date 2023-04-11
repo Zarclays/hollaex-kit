@@ -6,11 +6,11 @@ import { isUUID } from 'validator';
 import {
 	verifyVerificationCode,
 	checkVerificationCode,
-} from '../../actions/authAction';
+} from 'actions/authAction';
 
-import { IconTitle, Loader, Button } from '../../components';
-import { FLEX_CENTER_CLASSES } from '../../config/constants';
-import STRINGS from '../../config/localizedStrings';
+import { IconTitle, Loader, Button } from 'components';
+import { FLEX_CENTER_CLASSES } from 'config/constants';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 
 class VerifyEmailCode extends Component {
@@ -19,7 +19,7 @@ class VerifyEmailCode extends Component {
 		errorMessage: '',
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		const { code } = this.props.params;
 		if (isUUID(code)) {
 			this.props.checkVerificationData({ verification_code: code });

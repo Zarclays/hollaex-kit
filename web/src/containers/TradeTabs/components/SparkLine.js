@@ -7,7 +7,6 @@ class SparkLine extends Component {
 	constructor(props) {
 		super(props);
 		const { data: { close = [], open = 0 } = {} } = this.props;
-
 		this.state = {
 			chartOptions: {
 				tooltip: {
@@ -59,8 +58,11 @@ class SparkLine extends Component {
 		};
 	}
 
-	componentWillReceiveProps(nextProps) {
-		const { data } = this.props;
+	UNSAFE_componentWillReceiveProps(nextProps) {
+		const { data, renderDefaultLine } = this.props;
+		if (data?.close?.length === 1 && renderDefaultLine) {
+			data.close.push(data.close[0]);
+		}
 		if (JSON.stringify(data) !== JSON.stringify(nextProps.data)) {
 			this.setState((prevState) => ({
 				...prevState,
@@ -69,8 +71,12 @@ class SparkLine extends Component {
 					series: [
 						{
 							...prevState.chartOptions.series,
-							name: _get(nextProps, 'data.name') ? _get(nextProps, 'data.name') : _get(prevState, 'chartOptions.series.name'),
-							type: _get(nextProps, 'data.type') ? _get(nextProps, 'data.type') : _get(prevState, 'chartOptions.series.type'),
+							name: _get(nextProps, 'data.name')
+								? _get(nextProps, 'data.name')
+								: _get(prevState, 'chartOptions.series.name'),
+							type: _get(nextProps, 'data.type')
+								? _get(nextProps, 'data.type')
+								: _get(prevState, 'chartOptions.series.type'),
 							data: nextProps.data.close,
 							threshold: nextProps.data.open,
 						},

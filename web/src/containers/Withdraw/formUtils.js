@@ -1,19 +1,20 @@
+import { isMobile } from 'react-device-detect';
 import {
 	required,
 	minValue,
-	maxValue,
 	checkBalance,
 	checkFee,
 	validAddress,
 	normalizeBTC,
 	normalizeBTCFee,
-} from '../../components/Form/validations';
-import STRINGS from '../../config/localizedStrings';
-import { DEFAULT_COIN_DATA } from '../../config/constants';
-import { getLanguage } from '../../utils/string';
-import { getTheme } from '../../utils/theme';
-import { toFixed } from '../../utils/currency';
-import { getDecimals } from '../../utils/utils';
+} from 'components/Form/validations';
+import STRINGS from 'config/localizedStrings';
+import { STATIC_ICONS } from 'config/icons';
+import { DEFAULT_COIN_DATA } from 'config/constants';
+import { getLanguage } from 'utils/string';
+import { getTheme } from 'utils/theme';
+import { toFixed } from 'utils/currency';
+import { getDecimals } from 'utils/utils';
 import { getNetworkNameByKey } from 'utils/wallet';
 import { email } from 'components/AdminForm/validations';
 
@@ -121,21 +122,19 @@ export const generateFormValues = (
 	selectedNetwork,
 	ICONS = '',
 	selectedMethod,
-	handleMethodChange = () => {}
+	handleMethodChange = () => {},
+	openQRScanner = () => {}
 ) => {
 	const isEmail = selectedMethod && selectedMethod === 'email' ? true : false;
 	const {
 		fullname,
 		min,
 		increment_unit,
-		withdrawal_limits = {},
 		withdrawal_fee,
 		withdrawal_fees,
 		display_name,
 	} = coins[symbol] || DEFAULT_COIN_DATA;
-	let MAX = withdrawal_limits[verification_level];
-	if (withdrawal_limits[verification_level] === 0) MAX = '';
-	if (withdrawal_limits[verification_level] === -1) MAX = 0;
+
 	const available = balance[`${symbol}_available`] || 0;
 
 	let fee;
@@ -273,6 +272,18 @@ export const generateFormValues = (
 				],
 				fullWidth: true,
 				ishorizontalfield: true,
+				notification: [
+					{
+						stringId: 'QR_CODE.SCAN',
+						text: STRINGS['QR_CODE.SCAN'],
+						status: 'information',
+						iconPath: STATIC_ICONS['QR_CODE_SCAN'],
+						className: 'file_upload_icon',
+						useSvg: true,
+						onClick: openQRScanner,
+						showActionText: !isMobile,
+					},
+				],
 			};
 		}
 		if (isEmail) {
@@ -298,7 +309,7 @@ export const generateFormValues = (
 				fullWidth: true,
 				ishorizontalfield: true,
 			};
-		} else if (symbol === 'xlm' || selectedNetwork === 'xlm') {
+		} else if (!isEmail && (symbol === 'xlm' || selectedNetwork === 'xlm')) {
 			fields.destination_tag = {
 				type: 'text',
 				stringId:
@@ -317,11 +328,7 @@ export const generateFormValues = (
 				minValue(min, STRINGS['WITHDRAWALS_MIN_VALUE_ERROR'])
 			);
 		}
-		if (MAX) {
-			amountValidate.push(
-				maxValue(MAX, STRINGS['WITHDRAWALS_MAX_VALUE_ERROR'])
-			);
-		}
+
 		// FIX add according fee
 		// amountValidate.push(checkBalance(available, STRINGS.formatString(STRINGS["WITHDRAWALS_LOWER_BALANCE"], fullname), fee));
 		if (fee_coin && fee_coin !== symbol) {
@@ -349,7 +356,6 @@ export const generateFormValues = (
 				fullname
 			).join(''),
 			min: min,
-			max: MAX,
 			step: increment_unit,
 			validate: amountValidate,
 			normalize: normalizeBTC,
@@ -426,9 +432,8 @@ export const generateFormValues = (
 					fullname
 				).join(''),
 				min: min,
-				max: MAX,
 				step: min,
-				validate: [required, minValue(min), MAX ? maxValue(MAX) : ''],
+				validate: [required, minValue(min)],
 				normalize: normalizeBTCFee,
 				fullWidth: true,
 				ishorizontalfield: true,

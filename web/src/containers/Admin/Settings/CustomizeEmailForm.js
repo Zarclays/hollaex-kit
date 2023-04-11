@@ -7,6 +7,7 @@ import debounce from 'lodash.debounce';
 
 import { updateEmailStrings } from '../General/action';
 import { STATIC_ICONS } from 'config/icons';
+import FormButton from 'components/FormButton/Button';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -40,8 +41,8 @@ const CustomizeEmailForm = ({
 
 	let originalInitialValue = {
 		...initialValues,
-		format: defaultEmailData.html.replace(/@@_BIT_@@/g, "'"),
-		title: defaultEmailData.title,
+		format: defaultEmailData?.html?.replace(/@@_BIT_@@/g, "'"),
+		title: defaultEmailData?.title,
 	};
 
 	useEffect(() => {
@@ -383,14 +384,13 @@ const CustomizeEmailForm = ({
 						)}
 					</div>
 				</div>
-				<Button
+				<FormButton
 					type="primary"
-					className="green-btn"
 					htmlType="submit"
 					disabled={buttonSubmitting}
-				>
-					Save
-				</Button>
+					className="green-btn"
+					buttonText="Save"
+				/>
 			</Form>
 			<Modal
 				visible={isModalVisible}
