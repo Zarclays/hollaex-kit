@@ -1,3 +1,5 @@
+@import '../QuickTrade/components/Details';
+
 .hollaex-token-wrapper {
 	height: 100%;
 	display: flex;
@@ -5,16 +7,26 @@
 	align-items: center;
 	overflow-y: hidden;
 
+	.trade_tabs-link {
+		color: $link;
+		margin: 0.5rem 0;
+		padding: 0 0.5rem;
+		text-transform: capitalize;
+		&:hover {
+			opacity: 0.5;
+		}
+	}
+
+	.link-separator {
+		border-right: 1px solid $colors-border;
+	}
+
 	.mt-8 {
 		margin-top: 8rem;
 	}
 
 	.pb-6 {
 		padding-bottom: 6rem;
-	}
-
-	.icon_title-wrapper .icon_title-svg svg {
-		margin-top: 3px !important;
 	}
 
 	.icon_title-wrapper {
@@ -30,13 +42,6 @@
 	.token-wrapper {
 		width: 65%;
 		height: 100%;
-
-		.image-container {
-			.coins-icon {
-				width: 3.5rem;
-				height: 3.5rem;
-			}
-		}
 
 		.link {
 			color: $colors-notifications-blue;
@@ -106,9 +111,9 @@
 			justify-content: space-between;
 
 			.info-container {
-				width: 65%;
+				width: 100%;
 				background-color: $quick-trade-block-background;
-				padding: 4rem;
+				padding: 3rem;
 
 				.header-text {
 					font-size: 16px;
@@ -130,7 +135,7 @@
 				}
 
 				.button-container {
-					margin-top: 7rem;
+					margin-top: 3rem;
 
 					.edit-wrapper__container {
 						width: 100%;
@@ -151,12 +156,29 @@
 			}
 
 			.trade-details-wrapper {
-				padding: 40px 65px 30px 55px;
+				padding: 1rem 1rem 1rem 2rem;
 				font-family: $en--font-family;
 				background-color: $app-background-color;
 
+				.coin-bg {
+					opacity: 0.2;
+				}
+
 				.trade-details-content {
-					height: 450px;
+					min-height: 450px;
+
+					.header-text {
+						font-size: 16px;
+						font-weight: bold;
+						letter-spacing: 1px;
+					}
+
+					.sub-text {
+						font-size: 14px;
+						width: 100%;
+						margin-top: 1rem;
+						color: $colors-black;
+					}
 
 					.pb-30 {
 						padding-bottom: 30px;
@@ -171,13 +193,6 @@
 					}
 
 					.chart {
-						height: 100px;
-						margin: 10px 0;
-
-						div:last-child {
-							padding-top: 1rem;
-						}
-
 						.fade-area {
 							position: relative;
 						}
@@ -200,10 +215,6 @@
 						margin: 0 !important;
 						width: 100% !important;
 					}
-				}
-
-				.currency-ball-image-wrapper {
-					height: 5rem;
 				}
 
 				.f-size-16 {
@@ -256,6 +267,9 @@
 }
 
 .layout-mobile {
+	.hollaex-token-wrapper {
+		overflow-y: scroll;
+	}
 	.hollaex-token-wrapper .token-wrapper .hollaex-container {
 		display: block;
 

@@ -30,8 +30,6 @@ model = require(path.join(__dirname, './token'))(sequelize, Sequelize.DataTypes)
 db[model.name] = model;
 model = require(path.join(__dirname, './user'))(sequelize, Sequelize.DataTypes);
 db[model.name] = model;
-model = require(path.join(__dirname, './verificationCode'))(sequelize, Sequelize.DataTypes);
-db[model.name] = model;
 model = require(path.join(__dirname, './verificationImage'))(sequelize, Sequelize.DataTypes);
 db[model.name] = model;
 model = require(path.join(__dirname, './status'))(sequelize, Sequelize.DataTypes);
@@ -41,6 +39,18 @@ db[model.name] = model;
 model = require(path.join(__dirname, './plugin'))(sequelize, Sequelize.DataTypes);
 db[model.name] = model;
 model = require(path.join(__dirname, './broker'))(sequelize, Sequelize.DataTypes);
+db[model.name] = model;
+model = require(path.join(__dirname, './session'))(sequelize, Sequelize.DataTypes);
+db[model.name] = model;
+model = require(path.join(__dirname, './quickTrade'))(sequelize, Sequelize.DataTypes);
+db[model.name] = model;
+model = require(path.join(__dirname, './stake'))(sequelize, Sequelize.DataTypes);
+db[model.name] = model;
+model = require(path.join(__dirname, './staker'))(sequelize, Sequelize.DataTypes);
+db[model.name] = model;
+model = require(path.join(__dirname, './transactionLimit'))(sequelize, Sequelize.DataTypes);
+db[model.name] = model;
+model = require(path.join(__dirname, './balanceHistory'))(sequelize, Sequelize.DataTypes);
 db[model.name] = model;
 
 Object.keys(db).forEach(function (modelName) {

@@ -17,10 +17,11 @@ import { openContactForm } from 'actions/appActions';
 import TradingFees from './TradingFees';
 import WithdrawalFees from './WithdrawalFees';
 import WithdrawalLimits from './WithdrawalLimits';
+import { isLoggedIn } from 'utils/token';
 
 const Index = ({ config_level, verification_level, router }) => {
 	const [selectedLevel, setSelectedLevel] = useState(
-		verification_level?.toString()
+		isLoggedIn() ? verification_level?.toString() : Object.keys(config_level)[0]
 	);
 	const [tabs, setTabs] = useState([]);
 	const [activeTab, setActiveTab] = useState(0);
@@ -89,7 +90,7 @@ const Index = ({ config_level, verification_level, router }) => {
 		);
 
 	return config_level && Object.keys(config_level).length && selectedLevel ? (
-		<div className="presentation_container apply_rtl settings_container">
+		<div className="presentation_container apply_rtl settings_container fees_limits">
 			{!isMobile && (
 				<IconTitle
 					stringId="FEES_AND_LIMITS.TITLE"

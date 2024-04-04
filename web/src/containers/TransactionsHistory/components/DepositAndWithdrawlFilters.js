@@ -4,6 +4,7 @@ import { Select, Form, Row, DatePicker, Radio } from 'antd';
 import { CaretDownOutlined } from '@ant-design/icons';
 import moment from 'moment';
 
+import { Coin } from 'components';
 import STRINGS from 'config/localizedStrings';
 import { dateFilters } from '../filterUtils';
 
@@ -138,6 +139,7 @@ const Filters = ({ coins = {}, onSearch, formName, activeTab }) => {
 							width: 100,
 						}}
 						size="small"
+						showSearch={true}
 						className="custom-select-input-style elevated"
 						dropdownClassName="custom-select-style"
 						bordered={false}
@@ -162,18 +164,22 @@ const Filters = ({ coins = {}, onSearch, formName, activeTab }) => {
 				>
 					<Select
 						style={{
-							width: 100,
+							width: 140,
 						}}
 						size="small"
+						showSearch={true}
 						className="custom-select-input-style elevated"
 						dropdownClassName="custom-select-style"
 						bordered={false}
 						suffixIcon={<CaretDownOutlined />}
 					>
 						<Option value={null}>{STRINGS['ALL']}</Option>
-						{Object.entries(coins).map(([_, { symbol, fullname }]) => (
+						{Object.entries(coins).map(([_, { symbol, fullname, icon_id }]) => (
 							<Option key={symbol} value={symbol}>
-								{fullname}
+								<div className="d-flex gap-1">
+									<Coin iconId={icon_id} type="CS1" />
+									<div>{fullname}</div>
+								</div>
 							</Option>
 						))}
 					</Select>

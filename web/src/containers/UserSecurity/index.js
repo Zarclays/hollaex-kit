@@ -26,12 +26,19 @@ import {
 	Button,
 	TabController,
 	EditWrapper,
+	NotLoggedIn,
 } from 'components';
 import { errorHandler } from 'components/OtpForm/utils';
-import ChangePasswordForm, { generateFormValues } from './ChangePasswordForm';
+import ChangePasswordForm, {
+	generateFormValues,
+	selector as passwordSelector,
+} from './ChangePasswordForm';
 import { OTP, renderOTPForm } from './OTP';
 import { DeveloperSection } from './DeveloperSection';
+import Sessions from './Sessions';
+import Logins from './Logins';
 // import { FreezeSection } from './FreezeSection';
+import { isLoggedIn } from 'utils/token';
 
 import { generateLogins } from './utils_logins';
 import { RECORD_LIMIT } from './constants';
@@ -42,7 +49,7 @@ import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 // import { ICONS } from 'config/constants';
 
-class UserVerification extends Component {
+class UserSecurity extends Component {
 	state = {
 		tabs: [],
 		headers: [],
@@ -109,7 +116,11 @@ class UserVerification extends Component {
 		) {
 			this.calculateTabs(this.props.user, this.state.activeTab);
 		}
-		if (this.state.activeTab !== prevState.activeTab) {
+		if (
+			this.state.activeTab !== prevState.activeTab ||
+			JSON.stringify(prevProps.passwordFormValues) !==
+				JSON.stringify(this.props.passwordFormValues)
+		) {
 			this.setState({
 				error: undefined,
 			});
@@ -339,6 +350,32 @@ class UserVerification extends Component {
 					/>
 				)
 			}*/
+			{
+				title: isMobile ? (
+					<CustomMobileTabs
+						stringId={'SESSIONS.TAB'}
+						title={STRINGS['SESSIONS.TAB']}
+					/>
+				) : (
+					<EditWrapper stringId="SESSIONS.TAB">
+						{STRINGS['SESSIONS.TAB']}
+					</EditWrapper>
+				),
+				content: activeTab === 3 && <Sessions />,
+			},
+			{
+				title: isMobile ? (
+					<CustomMobileTabs
+						stringId={'LOGINS_HISTORY.TAB'}
+						title={STRINGS['LOGINS_HISTORY.TAB']}
+					/>
+				) : (
+					<EditWrapper stringId="LOGINS_HISTORY.TAB">
+						{STRINGS['LOGINS_HISTORY.TAB']}
+					</EditWrapper>
+				),
+				content: activeTab === 4 && <Logins />,
+			},
 		];
 
 		this.setState({ tabs });
@@ -559,12 +596,16 @@ class UserVerification extends Component {
 	};
 
 	render() {
-		if (this.props.user.verification_level === 0) {
+		const {
+			icons: ICONS,
+			openContactForm,
+			user: { otp, email, otp_enabled, verification_level },
+		} = this.props;
+
+		if (isLoggedIn() && verification_level === 0) {
 			return <Loader />;
 		}
 		const { dialogIsOpen, modalText, activeTab, tabs, freeze } = this.state;
-		const { otp, email, otp_enabled } = this.props.user;
-		const { icons: ICONS, openContactForm } = this.props;
 		//const { onCloseDialog } = this;
 
 		if (freeze === true) {
@@ -650,21 +691,23 @@ class UserVerification extends Component {
 					)}
 				</Dialog>
 
-				{!isMobile ? (
-					<TabController
-						activeTab={activeTab}
-						setActiveTab={this.setActiveTab}
-						tabs={tabs}
-					/>
-				) : (
-					<MobileTabBar
-						activeTab={activeTab}
-						renderContent={this.renderContent}
-						setActiveTab={this.setActiveTab}
-						tabs={tabs}
-					/>
-				)}
-				{!isMobile ? this.renderContent(tabs, activeTab) : null}
+				<NotLoggedIn>
+					{!isMobile ? (
+						<TabController
+							activeTab={activeTab}
+							setActiveTab={this.setActiveTab}
+							tabs={tabs}
+						/>
+					) : (
+						<MobileTabBar
+							activeTab={activeTab}
+							renderContent={this.renderContent}
+							setActiveTab={this.setActiveTab}
+							tabs={tabs}
+						/>
+					)}
+					{!isMobile && this.renderContent(tabs, activeTab)}
+				</NotLoggedIn>
 			</div>
 		);
 	}
@@ -675,6 +718,10 @@ const mapStateToProps = (state) => ({
 	user: state.user,
 	activeLanguage: state.app.language,
 	constants: state.app.constants,
+	passwordFormValues: passwordSelector(
+		state,
+		...Object.keys(generateFormValues())
+	),
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -687,4 +734,4 @@ const mapDispatchToProps = (dispatch) => ({
 export default connect(
 	mapStateToProps,
 	mapDispatchToProps
-)(withConfig(UserVerification));
+)(withConfig(UserSecurity));

@@ -2,14 +2,12 @@ import math from 'mathjs';
 import { createSelector } from 'reselect';
 import { calculateOraclePrice } from 'utils/currency';
 import { WALLET_SORT } from 'actions/appActions';
-import { handleUpgrade } from 'utils/utils';
 
 const getCoins = (state) => state.app.coins;
 const getBalances = (state) => state.user.balance;
 const getOraclePrices = (state) => state.asset.oraclePrices;
 const getSortMode = (state) => state.app.wallet_sort.mode;
 const getSortDir = (state) => state.app.wallet_sort.is_descending;
-const getKitInfo = (state) => state.app.info;
 export const getPinnedAssets = (state) => state.app.pinned_assets;
 
 export const selectAssetOptions = createSelector([getCoins], (coins) => {
@@ -23,19 +21,6 @@ export const selectAssetOptions = createSelector([getCoins], (coins) => {
 
 	return assets;
 });
-
-export const pinnedAssetsSelector = createSelector(
-	[getKitInfo, getPinnedAssets],
-	(info, pinnedAssets) => {
-		const isBasic = handleUpgrade(info);
-
-		if (isBasic) {
-			return ['xht'];
-		} else {
-			return pinnedAssets;
-		}
-	}
-);
 
 const unsortedAssetsSelector = createSelector(
 	[getCoins, getBalances, getOraclePrices],
@@ -80,7 +65,7 @@ export const sortedAssetsSelector = createSelector(
 );
 
 export const assetsSelector = createSelector(
-	[sortedAssetsSelector, pinnedAssetsSelector],
+	[sortedAssetsSelector, getPinnedAssets],
 	(assets, pins = []) => {
 		const pinnedAssets = [];
 		const restAssets = [];
@@ -105,14 +90,21 @@ export const assetsSelector = createSelector(
 export const searchAssets = (assets, searchValue = '', isZeroBalanceHidden) => {
 	const searchTerm = searchValue.toLowerCase().trim();
 
-	return assets.filter(([key, { fullname, balance }]) => {
+	return assets.filter(([key, { fullname, balance, symbol }]) => {
 		const coinName = fullname ? fullname.toLowerCase() : '';
+		const symbolName = symbol ? symbol.toLowerCase() : '';
 		const hasCoinBalance = !!balance;
 		const isCoinHidden = isZeroBalanceHidden && !hasCoinBalance;
 
-		return (
-			!isCoinHidden &&
-			(key.indexOf(searchTerm) !== -1 || coinName.indexOf(searchTerm) !== -1)
-		);
+		if (searchTerm) {
+			return searchTerm === '0'
+				? balance <= 0
+				: coinName?.includes(searchTerm) || symbolName?.includes(searchTerm);
+		} else {
+			return (
+				!isCoinHidden &&
+				(key.indexOf(searchTerm) !== -1 || coinName.indexOf(searchTerm) !== -1)
+			);
+		}
 	});
 };

@@ -14,6 +14,7 @@ const {
 	GET_EMAIL,
 	GET_COINS,
 	GET_PAIRS,
+	GET_TRANSACTION_LIMITS,
 	GET_TIERS,
 	GET_KIT_CONFIG,
 	GET_KIT_SECRETS,
@@ -23,7 +24,8 @@ const {
 	USER_META_KEYS,
 	VALID_USER_META_TYPES,
 	DOMAIN,
-	DEFAULT_FEES
+	DEFAULT_FEES,
+	BALANCE_HISTORY_SUPPORTED_PLANS
 } = require(`${SERVER_PATH}/constants`);
 const {
 	COMMUNICATOR_CANNOT_UPDATE,
@@ -31,7 +33,7 @@ const {
 	SUPPORT_DISABLED,
 	NO_NEW_DATA
 } = require(`${SERVER_PATH}/messages`);
-const { each, difference, isPlainObject, isString, pick, isNil, omit } = require('lodash');
+const { each, difference, isPlainObject, isString, pick, isNil, omit, isNumber } = require('lodash');
 const { publisher } = require('./database/redis');
 const { sendEmail: sendSmtpEmail } = require(`${SERVER_PATH}/mail`);
 const { sendSMTPEmail: nodemailerEmail } = require(`${SERVER_PATH}/mail/utils`);
@@ -44,7 +46,7 @@ const { checkStatus: checkExchangeStatus, getNodeLib } = require(`${SERVER_PATH}
 const rp = require('request-promise');
 const { isEmail: isValidEmail } = require('validator');
 const moment = require('moment');
-const { GET_BROKER } = require('../../../constants');
+const { GET_BROKER, GET_QUICKTRADE, GET_NETWORK_QUICKTRADE } = require('../../../constants');
 const BigNumber = require('bignumber.js');
 // const { Transform } = require('json2csv');
 
@@ -71,7 +73,7 @@ const subscribedToCoin = (coin) => {
 };
 
 const subscribedToPair = (pair) => {
-	return getKitPairs().includes(pair);
+	return (getKitPairs().includes(pair) || getQuickTradePairs().includes(pair));
 };
 
 const getKitTiers = () => {
@@ -80,6 +82,10 @@ const getKitTiers = () => {
 
 const getKitTier = (tier) => {
 	return GET_TIERS()[tier];
+};
+
+const getQuickTradePairs = () => {
+	return (getQuickTrades() || []).map(config => config.symbol);
 };
 
 const isValidTierLevel = (level) => {
@@ -164,7 +170,7 @@ const maskSecrets = (secrets) => {
 	return secrets;
 };
 
-const updateKitConfigSecrets = (data = {}, scopes) => {
+const updateKitConfigSecrets = (data = {}, scopes, auditInfo) => {
 	let role = 'admin';
 
 	if (!data.kit && !data.secrets) {
@@ -197,6 +203,13 @@ const updateKitConfigSecrets = (data = {}, scopes) => {
 			}
 			if (data.secrets && Object.keys(data.secrets).length > 0) {
 				updatedKitConfig.secrets = joinKitSecrets(status.dataValues.secrets, data.secrets, role);
+			}
+			const { createAuditLog } = require('./user');
+			if (updatedKitConfig?.kit && Object.keys(updatedKitConfig?.kit).length > 0) {
+				createAuditLog({ email: auditInfo.userEmail, session_id: auditInfo.sessionId }, auditInfo.apiPath, auditInfo.method, updatedKitConfig.kit, status.dataValues.kit);
+			}
+			if (updatedKitConfig?.secrets && Object.keys(updatedKitConfig?.secrets).length > 0) {
+				createAuditLog({ email: auditInfo.userEmail, session_id: auditInfo.sessionId }, auditInfo.apiPath, auditInfo.method, updatedKitConfig.secrets, status.dataValues.secrets);
 			}
 			return status.update(updatedKitConfig, {
 				fields: [
@@ -247,6 +260,71 @@ const joinKitConfig = (existingKitConfig = {}, newKitConfig = {}) => {
 				newKitConfig.user_meta[metaKey],
 				...USER_META_KEYS
 			);
+		}
+	}
+
+	if (newKitConfig.coin_customizations) {
+		for(let coin of Object.values(newKitConfig.coin_customizations)) {
+			if(!coin.hasOwnProperty('fee_markup')) {
+				throw new Error('Fee markup key does not exist');
+			}
+
+			if (coin.fee_markup < 0) {
+				throw new Error('Fee markup cannot be negative');
+			}
+
+			if (coin.fee_markup && !isNumber(coin.fee_markup)) {
+				throw new Error('Fee markup is not a number');
+			}
+		}
+	}
+
+	if (newKitConfig.fiat_fees) {
+		for(let coin of Object.values(newKitConfig.fiat_fees)) {
+		
+			if (coin.withdrawal_fee && coin.withdrawal_fee < 0) {
+				throw new Error('withdrawal fee cannot be negative');
+			}
+
+			if (coin.withdrawal_fee && !isNumber(coin.withdrawal_fee)) {
+				throw new Error('withdrawal fee is not a number');
+			}
+
+			if (coin.deposit_fee && coin.deposit_fee < 0) {
+				throw new Error('deposit fee cannot be negative');
+			}
+
+			if (coin.deposit_fee && !isNumber(coin.deposit_fee)) {
+				throw new Error('deposit fee is not a number');
+			}
+		}
+	}
+
+	if (newKitConfig.balance_history_config) {
+
+		const exchangeInfo = getKitConfig().info;
+
+		if (!BALANCE_HISTORY_SUPPORTED_PLANS.includes(exchangeInfo.plan))
+			throw new Error('Exchange plan does not support this feature');
+
+		if (!newKitConfig.balance_history_config.hasOwnProperty('currency')) {
+			throw new Error('currency does not exist');
+		}
+
+		if (existingKitConfig?.balance_history_config?.currency && existingKitConfig?.balance_history_config?.currency !== newKitConfig.balance_history_config.currency) {
+			throw new Error('currency cannot be changed');
+		}
+
+		if (existingKitConfig?.balance_history_config?.date_enabled && existingKitConfig?.balance_history_config?.date_enabled !== newKitConfig.balance_history_config.date_enabled) {
+			throw new Error('date cannot be changed');
+		}
+
+		if(!newKitConfig.balance_history_config.hasOwnProperty('active')) {
+			throw new Error('active does not exist');
+		}
+
+		if(!newKitConfig.balance_history_config.hasOwnProperty('date_enabled')) {
+			throw new Error('date enabled does not exist');
 		}
 	}
 
@@ -452,6 +530,15 @@ const getCharts = (from, to, resolution, opts = {
 	return getNodeLib().getCharts(from, to, resolution, opts);
 };
 
+const getMiniCharts = (assets, opts = {
+	from: null, 
+	to: null, 
+	quote: null,
+	additionalHeaders: null
+}) => {
+	return getNodeLib().getMiniCharts(assets, opts);
+};
+
 const getUdfConfig = (opts = {
 	additionalHeaders: null
 }) => {
@@ -637,7 +724,7 @@ const updateKitUserMeta = async (name, data = {
 	type: null,
 	description: null,
 	required: null
-}) => {
+}, auditInfo) => {
 	const existingUserMeta = getKitConfig().user_meta;
 
 	if (!existingUserMeta[name]) {
@@ -675,7 +762,8 @@ const updateKitUserMeta = async (name, data = {
 			user_meta: updatedUserMeta
 		}
 	});
-
+	const { createAuditLog } = require('./user');
+	createAuditLog({ email: auditInfo.userEmail, session_id: auditInfo.sessionId }, auditInfo.apiPath, auditInfo.method, updatedUserMeta, existingUserMeta);
 	publisher.publish(
 		CONFIGURATION_CHANNEL,
 		JSON.stringify({
@@ -755,14 +843,14 @@ const getNetworkConstants = (opts = {
 const getNetworkEndpoint = () => HOLLAEX_NETWORK_ENDPOINT;
 
 const getDefaultFees = () => {
-	const { info: { type, collateral_level } } = getKitConfig();
+	const { info: { type, plan } } = getKitConfig();
 	if (type === 'Enterprise') {
 		return {
 			maker: 0,
 			taker: 0
 		};
 	} else {
-		return DEFAULT_FEES[collateral_level];
+		return DEFAULT_FEES[plan];
 	}
 };
 
@@ -792,6 +880,20 @@ const validatePair = (pair) => {
 const getBrokerDeals = () => {
 	return GET_BROKER();
 };
+
+const getQuickTrades = () => {
+	return GET_QUICKTRADE();
+};
+
+const getTransactionLimits = () => {
+	return GET_TRANSACTION_LIMITS();
+};
+
+
+const getNetworkQuickTrades = () => {
+	return GET_NETWORK_QUICKTRADE();
+}
+
 const parseNumber = (number, precisionValue) => {
 	return BigNumber(number).precision(precisionValue, BigNumber.ROUND_DOWN).toNumber();
 }
@@ -830,6 +932,7 @@ module.exports = {
 	getOrderbooks,
 	getChart,
 	getCharts,
+	getMiniCharts,
 	getUdfConfig,
 	getUdfHistory,
 	getUdfSymbols,
@@ -859,5 +962,9 @@ module.exports = {
 	validateIp,
 	validatePair,
 	getBrokerDeals,
-	parseNumber
+	getQuickTrades,
+	getNetworkQuickTrades,
+	parseNumber,
+	getQuickTradePairs,
+	getTransactionLimits
 };

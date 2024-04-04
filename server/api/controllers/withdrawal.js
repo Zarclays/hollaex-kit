@@ -3,7 +3,8 @@
 const { loggerWithdrawals } = require('../../config/logger');
 const toolsLib = require('hollaex-tools-lib');
 const { all } = require('bluebird');
-const { USER_NOT_FOUND } = require('../../messages');
+const { ROLES } = require('../../constants');
+const { USER_NOT_FOUND, API_KEY_NOT_PERMITTED } = require('../../messages');
 const { errorMessageConverter } = require('../../utils/conversion');
 const { isEmail } = require('validator');
 
@@ -27,7 +28,7 @@ const getWithdrawalFee = (req, res) => {
 			'controller/withdrawal/getWithdrawalFee err',
 			err.message
 		);
-		return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+		return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err, req?.auth?.sub?.lang) });
 	}
 };
 
@@ -77,7 +78,7 @@ const requestWithdrawal = (req, res) => {
 				'controller/withdrawal/requestWithdrawal',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err, req?.auth?.sub?.lang) });
 		});
 };
 
@@ -107,6 +108,13 @@ const performWithdrawal = (req, res) => {
 			if (user.verification_level < 1) {
 				throw new Error('User must upgrade verification level to perform a withdrawal');
 			}
+
+			return all([
+				withdrawal,
+				toolsLib.wallet.validateWithdrawal(user, withdrawal.address, withdrawal.amount, withdrawal.currency, withdrawal.network)
+			]);
+		})
+		.then(async ([withdrawal]) => {
 			if (isEmail(withdrawal.address)) {
 				const receiver = await toolsLib.user.getUserByEmail(withdrawal.address);
 				if (!receiver) {
@@ -147,6 +155,7 @@ const performWithdrawal = (req, res) => {
 						withdrawal.amount,
 						{
 							network: withdrawal.network,
+							fee_markup: withdrawal.fee_markup,
 							additionalHeaders: {
 								'x-forwarded-for': req.headers['x-forwarded-for']
 							}
@@ -169,7 +178,7 @@ const performWithdrawal = (req, res) => {
 				'controller/withdrawals/performWithdrawal',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err, req?.auth?.sub?.lang) });
 		});
 };
 
@@ -236,9 +245,41 @@ const performDirectWithdrawal = (req, res) => {
 				'controller/withdrawals/performWithdrawal',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err, req?.auth?.sub?.lang) });
 		});
 };
+
+const getWithdrawalMax = (req, res) => {
+	loggerWithdrawals.verbose(
+		req.uuid,
+		'controllers/withdrawal/getWithdrawalMax/auth',
+		req.auth
+	);
+
+	const {
+		currency,
+		network,
+	} = req.swagger.params;
+
+
+	toolsLib.wallet.calculateWithdrawalMax(
+		req.auth.sub.id,
+		currency.value,
+		network.value,
+
+	)
+		.then((data) => {
+			return res.json(data);
+		})
+		.catch((err) => {
+			loggerWithdrawals.error(
+				req.uuid,
+				'controllers/withdrawal/getWithdrawalMax',
+				err.message
+			);
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err, req?.auth?.sub?.lang) });
+		});
+}
 
 const getAdminWithdrawals = (req, res) => {
 	loggerWithdrawals.verbose(
@@ -266,6 +307,10 @@ const getAdminWithdrawals = (req, res) => {
 		address
 	} = req.swagger.params;
 
+	if (format.value && req.auth.scopes.indexOf(ROLES.ADMIN) === -1 && !user_id.value) {
+		return res.status(403).json({ message: API_KEY_NOT_PERMITTED });
+	}
+
 	toolsLib.wallet.getUserWithdrawalsByKitId(
 		user_id.value,
 		currency.value,
@@ -290,7 +335,8 @@ const getAdminWithdrawals = (req, res) => {
 		}
 	)
 		.then((data) => {
-			if (format.value) {
+			toolsLib.user.createAuditLog({ email: req?.auth?.sub?.email, session_id: req?.session_id }, req?.swagger?.apiPath, req?.swagger?.operationPath?.[2], req?.swagger?.params);
+			if (format.value === 'csv') {
 				res.setHeader('Content-disposition', `attachment; filename=${toolsLib.getKitConfig().api_name}-users-deposits.csv`);
 				res.set('Content-Type', 'text/csv');
 				return res.status(202).send(data);
@@ -304,7 +350,7 @@ const getAdminWithdrawals = (req, res) => {
 				'controllers/withdrawal/getWithdrawals',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err, req?.auth?.sub?.lang) });
 		});
 };
 
@@ -357,7 +403,7 @@ const getUserWithdrawals = (req, res) => {
 		}
 	)
 		.then((data) => {
-			if (format.value) {
+			if (format.value === 'csv') {
 				res.setHeader('Content-disposition', `attachment; filename=${toolsLib.getKitConfig().api_name}-withdrawals.csv`);
 				res.set('Content-Type', 'text/csv');
 				return res.status(202).send(data);
@@ -367,7 +413,7 @@ const getUserWithdrawals = (req, res) => {
 		})
 		.catch((err) => {
 			loggerWithdrawals.error('controllers/withdrawal/getUserWithdrawals', err.message);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err, req?.auth?.sub?.lang) });
 		});
 };
 
@@ -395,7 +441,7 @@ const cancelWithdrawal = (req, res) => {
 				'controllers/withdrawal/cancelWithdrawal',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err, req?.auth?.sub?.lang) });
 		});
 };
 
@@ -406,5 +452,6 @@ module.exports = {
 	getAdminWithdrawals,
 	getUserWithdrawals,
 	cancelWithdrawal,
-	performDirectWithdrawal
+	performDirectWithdrawal,
+	getWithdrawalMax
 };

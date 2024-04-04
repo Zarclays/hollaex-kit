@@ -1,6 +1,6 @@
 import {Given, When, Then} from "cypress-cucumber-preprocessor/steps"
 const randomUsername = Math.random().toString(36).substring(2,6);
-const username = randomUsername+Cypress.env('NEW_USER')
+const username = 'tester+'+randomUsername+Cypress.env('NEW_USER')
 
 Given ('I am in Hollaex signup page',()=>{
 
@@ -23,28 +23,30 @@ When ('I fill up the form',()=>{
 Then ('I get a success notification',()=>{
 
      cy.get('.icon_title-text').should('contain', 'Email sent')
-     cy.wait(10000)
+     cy.wait(5000)
 })
    
 When ('I confirm the registration by Email',()=>{
 
-     let text= null
-     var link;
-     cy.visit(Cypress.env('EMAIL_PAGE'))
-     cy.get('#wdc_username_div').type(Cypress.env('EMAIL_ADMIN_USERNAME'))
-     cy.get('#wdc_password').type(Cypress.env('EMAIL_PASS'))
-     cy.get('#wdc_login_button').click();
-     cy.get('#ext-gen52').click()
-     cy.log('created new user')
-     cy.get('.x-grid3-row-first > .x-grid3-row-table > tbody[role="presentation"] > .x-grid3-row-body-tr > .x-grid3-body-cell > .x-grid3-row-body > .mail-body-row > tbody > tr > .subject > .grid_compact')
-     .dblclick()
-     cy.wait(5000)
-     cy.then(()=>{ text =  cy.getIframe('.preview-iframe').should('not.null').toString()})
-     .then((text)=>  link= cy.trimmer(text,"https://sandbox.hollaex.com/verify",username))
-     .should('not.be.false')
-     .then((link )=>cy.forceVisit(link))
-      cy.contains('Success').should('exist')
-      cy.log("link is ", link )
+  cy.task('getLastEmail', {
+    user: Cypress.env('EMAIL_ADMIN'),
+    password: Cypress.env('EMAIL_PASS'),
+    host: Cypress.env('EMAIL_HOST'),
+    port: 993,
+    tls: true  })
+    .then((emailContent) => {
+     cy.extractText(emailContent).then((extractedText) => {
+     cy.log(`Extracted Text: ${extractedText}`);
+       expect(extractedText).to.include(username)
+       expect(extractedText).to.include('You need to confirm your email account by clicking the button below.');
+     cy.findFirstHyperlinkAfterMyWord(extractedText,'[')
+      .then((link) => {
+       cy.forceVisit(link.slice(0, -1)); });
+     }) ;})
+     cy.contains('Confirm Sign Up').should('exist')
+     cy.contains('CONFIRM SIGN UP').click()
+     cy.contains('Success').should('exist')
+     
  })
 
 Then ('I am eligible to log in',()=>{})
@@ -66,12 +68,15 @@ When ('I enter credentials',()=>{
       })
 }) 
 
-Then ('I should be able to login successfully',()=>{
+Then ('I should be able to login successfully and Verification email should be the same',()=>{
 
    cy.fixture('example')
    .then((user)=>{
-        cy.get('#trade-nav-container > :nth-child(3) > :nth-child(2)')
+        cy.get('#trade-nav-container > :nth-child(4) > :nth-child(2)')
         .should('contain', user.email )
+        cy.contains('Verification').click()
+        cy.contains('Email').click()
+        cy.get('.information-content').should('contain', user.email )
         cy.writeFile('cypress\\fixtures\\example.json', {})
    })
 })

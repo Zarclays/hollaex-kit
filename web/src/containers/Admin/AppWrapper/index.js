@@ -8,7 +8,7 @@ import { debounce, capitalize } from 'lodash';
 import { ReactSVG } from 'react-svg';
 import MobileDetect from 'mobile-detect';
 
-import { PATHS } from '../paths';
+import { PATHS, ADMIN_PATHS, SUPERVISOR_PATH } from '../paths';
 import SetupWizard from '../SetupWizard';
 import {
 	removeToken,
@@ -404,6 +404,10 @@ class AppWrapper extends React.Component {
 			tabParams?.isFiat === 'offRamp'
 		) {
 			return 'Fiat controls';
+		} else if (location.pathname.includes('/admin/stakes')) {
+			return 'Stakes';
+		} else if (location.pathname.includes('/admin/sessions')) {
+			return 'Sessions';
 		} else if (location.pathname.includes('/admin/financial')) {
 			return 'Assets';
 		} else if (location.pathname.includes('/admin/trade')) {
@@ -422,6 +426,8 @@ class AppWrapper extends React.Component {
 			return 'API keys';
 		} else if (location.pathname.includes('/admin/billing')) {
 			return 'Billing';
+		} else if (location.pathname.includes('/admin/audits')) {
+			return 'Operator Logs';
 		} else if (location.pathname.includes('/admin/collateral')) {
 			return 'Collateral';
 		} else if (location.pathname.includes('/admin/resources')) {
@@ -553,7 +559,14 @@ class AppWrapper extends React.Component {
 			myPlugins,
 			isConfigure,
 		} = this.state;
-		let pathNames = PATHS;
+		let pathNames = [];
+		if (checkRole() === 'admin') {
+			pathNames = ADMIN_PATHS;
+		} else if (checkRole() === 'supervisor') {
+			pathNames = [...PATHS, ...SUPERVISOR_PATH];
+		} else {
+			pathNames = PATHS;
+		}
 
 		if (features.apps) {
 			pathNames = [

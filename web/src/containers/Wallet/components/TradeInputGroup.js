@@ -1,16 +1,18 @@
 import React from 'react';
 import { isMobile } from 'react-device-detect';
-import { ActionNotification, Image } from 'components';
 import { Space, Menu, Dropdown } from 'antd';
+
+import { ActionNotification, Coin } from 'components';
 import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 
 const TradeInputGroup = ({
 	markets,
-	broker,
+	quicktrade,
 	goToTrade,
 	icons: ICONS,
 	pairs,
+	tradeClassName,
 }) => {
 	return (
 		<Dropdown
@@ -24,17 +26,12 @@ const TradeInputGroup = ({
 					{markets.map((market) => {
 						const { display_name, icon_id } =
 							pairs[market] ||
-							broker.find(({ symbol }) => symbol === market) ||
+							quicktrade.find(({ symbol }) => symbol === market) ||
 							{};
 						return (
 							<Menu.Item className="caps" key={market}>
 								<div className="d-flex align-items-center">
-									<Image
-										iconId={icon_id}
-										icon={ICONS[icon_id]}
-										wrapperClassName="app-bar-add-tab-icons"
-										imageWrapperClassName="currency-ball-image-wrapper"
-									/>
+									<Coin iconId={icon_id} type={isMobile ? 'CS5' : 'CS2'} />
 									<div className="app_bar-pair-font">{display_name}</div>
 								</div>
 							</Menu.Item>
@@ -52,6 +49,7 @@ const TradeInputGroup = ({
 					className="csv-action"
 					showActionText={isMobile}
 					disable={markets.length === 0}
+					tradeClassName={tradeClassName}
 				/>
 			</Space>
 		</Dropdown>

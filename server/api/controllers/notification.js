@@ -5,7 +5,7 @@ const toolsLib = require('hollaex-tools-lib');
 const { sendEmail } = require('../../mail');
 const { MAILTYPE } = require('../../mail/strings');
 const { publisher } = require('../../db/pubsub');
-const { INIT_CHANNEL, WS_PUBSUB_DEPOSIT_CHANNEL, EVENTS_CHANNEL } = require('../../constants');
+const { INIT_CHANNEL, WS_PUBSUB_DEPOSIT_CHANNEL, EVENTS_CHANNEL, WS_PUBSUB_WITHDRAWAL_CHANNEL } = require('../../constants');
 const moment = require('moment');
 const { errorMessageConverter } = require('../../utils/conversion');
 
@@ -23,7 +23,7 @@ const applyKitChanges = (req, res) => {
 		})
 		.catch((err) => {
 			loggerNotification.verbose('controller/notification/applyKitChanges', err.message);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err, req?.auth?.sub?.lang) });
 		});
 };
 
@@ -86,15 +86,15 @@ const handleCurrencyDeposit = (req, res) => {
 					description
 				};
 
-				if (is_confirmed) {
-					publisher.publish(WS_PUBSUB_DEPOSIT_CHANNEL, JSON.stringify({
-						topic: 'deposit',
-						action: 'insert',
-						user_id: user.network_id,
-						data: depositData,
-						time: moment().unix()
-					}));
-				}
+				publisher.publish(WS_PUBSUB_DEPOSIT_CHANNEL, JSON.stringify({
+					topic: 'deposit',
+					action: 'insert',
+					user_id: user.id,
+					user_network_id: user.network_id,
+					data: depositData,
+					time: moment().unix()
+				}));
+				
 
 				publisher.publish(EVENTS_CHANNEL, JSON.stringify({
 					type: 'deposit',
@@ -120,7 +120,7 @@ const handleCurrencyDeposit = (req, res) => {
 				'controller/notification/handleCurrencyDeposit',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: `Fail - ${errorMessageConverter(err)}` });
+			return res.status(err.statusCode || 400).json({ message: `Fail - ${errorMessageConverter(err, req?.auth?.sub?.lang)}` });
 		});
 };
 
@@ -183,6 +183,15 @@ const handleCurrencyWithdrawal = (req, res) => {
 					description
 				};
 
+				publisher.publish(WS_PUBSUB_WITHDRAWAL_CHANNEL, JSON.stringify({
+					topic: 'withdrawal',
+					action: 'insert',
+					user_id: user.id,
+					user_network_id: user.network_id,
+					data: data,
+					time: moment().unix()
+				}));
+
 				publisher.publish(EVENTS_CHANNEL, JSON.stringify({
 					type: 'withdrawal',
 					data: {
@@ -208,7 +217,7 @@ const handleCurrencyWithdrawal = (req, res) => {
 				'controller/notification/handleCurrencyWithdrawal',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: `Fail - ${errorMessageConverter(err)}` });
+			return res.status(err.statusCode || 400).json({ message: `Fail - ${errorMessageConverter(err, req?.auth?.sub?.lang)}` });
 		});
 };
 

@@ -2,13 +2,13 @@ const rp = require('request-promise');
 const crypto = require('crypto');
 const moment = require('moment');
 const { isDate } = require('lodash');
-const { logger } = require('../../config/logger');
 const requestCache = new Map();
 const cachePeriods = {
 	'chart': 40,
 	'charts': 40,
-	'oracle': 60
-}
+	'oracle': 60,
+	'minichart': 60 * 10 // 5 minute
+};
 
 const createRequest = (verb, url, headers, opts = { data: null, formData: null }, baseUrl = null) => {
 	const requestObj = {
@@ -30,12 +30,10 @@ const createRequest = (verb, url, headers, opts = { data: null, formData: null }
 	if (requestCache.has(urlKey) 
 		&& new Date().getTime() - new Date(requestCache.get(urlKey).timestamp).getTime() < requestCache.get(urlKey).period * 1000) {
 		fetchRequest = requestCache.get(urlKey).request;
-		logger.info(`Fetching the request from cache: ${urlKey}`);
 	}
 	else {
 		fetchRequest = rp[verb.toLowerCase()](requestObj);
 		if(verb === 'GET' && !url.includes('user_id')){
-			logger.info(`Request Cached: ${urlKey}`);
 			requestCache.set(urlKey, {
 				timestamp: new Date(),
 				request: fetchRequest,

@@ -1,17 +1,18 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import { Link } from 'react-router';
 import { reduxForm } from 'redux-form';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import { isMobile } from 'react-device-detect';
 import { ExclamationCircleFilled } from '@ant-design/icons';
+
 import { STATIC_ICONS } from 'config/icons';
 import STRINGS from 'config/localizedStrings';
 import { EditWrapper, Button, SmartTarget } from 'components';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { required } from 'components/Form/validations';
 import { getNetworkNameByKey } from 'utils/wallet';
-
 import Image from 'components/Image';
 import renderFields from 'components/Form/factoryFields';
-import { isMobile } from 'react-device-detect';
 import Fiat from './Fiat';
 
 export const generateBaseInformation = (id = '') => (
@@ -23,6 +24,21 @@ export const generateBaseInformation = (id = '') => (
 		)}
 	</div>
 );
+
+export const renderBackToWallet = () => {
+	return (
+		<div style={{ fontSize: '15px' }}>
+			<EditWrapper stringId="CURRENCY_WALLET.WALLET_PAGE">
+				{STRINGS.formatString(
+					STRINGS['CURRENCY_WALLET.WALLET_PAGE'],
+					<Link className="link-content" to="wallet">
+						{STRINGS['CURRENCY_WALLET.BACK']}
+					</Link>
+				)}
+			</EditWrapper>
+		</div>
+	);
+};
 
 export const generateFormFields = ({
 	currency,
@@ -46,13 +62,25 @@ export const generateFormFields = ({
 			label: getNetworkNameByKey(network),
 		}));
 
+		const { min } = coins[currency];
+		const warnings = [STRINGS['DEPOSIT_FORM_NETWORK_WARNING']];
+		if (min) {
+			warnings.push(
+				STRINGS.formatString(
+					STRINGS['DEPOSIT_FORM_MIN_WARNING'],
+					min,
+					currency.toUpperCase()
+				)
+			);
+		}
+
 		fields.network = {
 			type: 'select',
 			stringId:
-				'WITHDRAWALS_FORM_NETWORK_LABEL,WITHDRAWALS_FORM_NETWORK_PLACEHOLDER,DEPOSIT_FORM_NETWORK_WARNING',
+				'WITHDRAWALS_FORM_NETWORK_LABEL,WITHDRAWALS_FORM_NETWORK_PLACEHOLDER,DEPOSIT_FORM_NETWORK_WARNING,DEPOSIT_FORM_MIN_WARNING',
 			label: STRINGS['WITHDRAWALS_FORM_NETWORK_LABEL'],
 			placeholder: STRINGS['WITHDRAWALS_FORM_NETWORK_PLACEHOLDER'],
-			warning: STRINGS['DEPOSIT_FORM_NETWORK_WARNING'],
+			warnings,
 			validate: [required],
 			fullWidth: true,
 			options: networkOptions,
@@ -108,7 +136,7 @@ export const generateFormFields = ({
 			const isPercentage = type === 'percentage';
 			const fee_coin = isPercentage ? '' : symbol || currency;
 
-			const fullname = coins[fee_coin]?.fullname;
+			const fullname = coins[fee_coin]?.fullname || '';
 
 			fields.fee = {
 				type: 'number',
@@ -187,7 +215,8 @@ const RenderContentForm = ({
 						</div>
 						{(currency === 'xrp' ||
 							currency === 'xlm' ||
-							selectedNetwork === 'xlm') && (
+							selectedNetwork === 'xlm' ||
+							selectedNetwork === 'ton') && (
 							<div className="d-flex">
 								<div className="d-flex align-items-baseline field_warning_wrapper">
 									<ExclamationCircleFilled className="field_warning_icon" />

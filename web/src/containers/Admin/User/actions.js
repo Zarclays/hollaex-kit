@@ -1,4 +1,4 @@
-import { all } from 'bluebird';
+import { all } from 'rsvp';
 import querystring from 'query-string';
 import axios from 'axios';
 import store from 'store';
@@ -196,6 +196,15 @@ export const verifyUser = (values) => {
 	return requestAuthenticated('/admin/verify-email', options);
 };
 
+export const recoverUser = (values) => {
+	const options = {
+		method: 'POST',
+		body: JSON.stringify(values),
+	};
+
+	return requestAuthenticated('/admin/user/restore', options);
+};
+
 export const performVerificationLevelUpdate = (values) => {
 	const options = {
 		method: 'POST',
@@ -274,4 +283,47 @@ export const getUserReferer = (user_id) => {
 		`/admin/user/referer?user_id=${user_id}`,
 		options
 	);
+};
+
+export const requestAddUser = (values) => {
+	const options = {
+		method: 'POST',
+		body: JSON.stringify(values),
+	};
+	return requestAuthenticated('/admin/user', options);
+};
+
+export const requestUserBalancesDownload = (values) => {
+	let path = '/admin/balances';
+	if (values) {
+		path = `/admin/balances?${toQueryString(values)}`;
+	}
+	return axios({
+		method: 'GET',
+		url: path,
+	})
+		.then((res) => {
+			const url = window.URL.createObjectURL(new Blob([res.data]));
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute(
+				'download',
+				`balances_${moment().format('YYYY-MM-DD')}.csv`
+			);
+			document.body.appendChild(link);
+			link.click();
+		})
+		.catch((err) => {});
+};
+
+export const changeUserEmail = (values) => {
+	try {
+		const options = {
+			method: 'PUT',
+			body: JSON.stringify(values),
+		};
+		return requestAuthenticated('/admin/user/email', options);
+	} catch (error) {
+		return error;
+	}
 };

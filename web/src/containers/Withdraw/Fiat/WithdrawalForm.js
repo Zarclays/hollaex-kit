@@ -12,12 +12,12 @@ import {
 import renderFields from 'components/Form/factoryFields';
 import ReviewModalContent from './ReviewModalContent';
 import {
-	Image,
 	Button,
 	IconTitle,
 	EditWrapper,
 	Dialog,
 	OtpForm,
+	Coin,
 } from 'components';
 import { DEFAULT_COIN_DATA } from 'config/constants';
 import { getDecimals } from 'utils/utils';
@@ -33,46 +33,15 @@ export const selector = formValueSelector(FORM_NAME);
 let errorTimeOut = null;
 
 const validate = (values, props) => {
-	const { currency, coins, balance } = props;
-	const { withdrawal_fees } = coins[currency] || DEFAULT_COIN_DATA;
-	const { network } = values;
-
 	const errors = {};
-	const amount = math.fraction(values.amount || 0);
-	const fee = math.fraction(values.fee || 0);
+	const amount = math.fraction(values?.amount || 0);
 	const balanceAvailable = math.fraction(props.balanceAvailable || 0);
-	let fee_coin;
 
-	if (withdrawal_fees && network && withdrawal_fees[network]) {
-		fee_coin = withdrawal_fees[network].symbol;
-		const fullFeeCoinName = coins[fee_coin].fullname;
-		const availableFeeBalance = math.fraction(
-			balance[`${fee_coin}_available`] || 0
+	if (math.larger(amount, balanceAvailable)) {
+		errors.fee = STRINGS.formatString(
+			STRINGS['WITHDRAWALS_LOWER_BALANCE'],
+			math.number(amount)
 		);
-		const totalTransaction = amount;
-		const totalFee = fee;
-
-		if (math.larger(totalTransaction, balanceAvailable)) {
-			errors.amount = STRINGS.formatString(
-				STRINGS['WITHDRAWALS_LOWER_BALANCE'],
-				math.number(totalTransaction)
-			);
-		}
-
-		if (math.larger(totalFee, availableFeeBalance)) {
-			errors.amount = STRINGS.formatString(
-				STRINGS['WITHDRAWALS_LOWER_BALANCE'],
-				`${math.number(totalFee)} ${fullFeeCoinName}`
-			);
-		}
-	} else {
-		const totalTransaction = math.add(fee, amount);
-		if (math.larger(totalTransaction, balanceAvailable)) {
-			errors.fee = STRINGS.formatString(
-				STRINGS['WITHDRAWALS_LOWER_BALANCE'],
-				math.number(totalTransaction)
-			);
-		}
 	}
 
 	return errors;
@@ -300,6 +269,7 @@ class Index extends Component {
 			activeTab,
 			router,
 			banks,
+			fiat_fees,
 		} = this.props;
 		const { dialogIsOpen, dialogOtpOpen, successfulRequest } = this.state;
 
@@ -309,15 +279,12 @@ class Index extends Component {
 		const { icon_id } = coins[currency];
 
 		const { rate: fee } = getFiatWithdrawalFee(currency);
+		const customFee = fiat_fees?.[currency]?.withdrawal_fee;
 
 		return (
 			<div className="withdraw-form-wrapper">
 				<div className="withdraw-form">
-					<Image
-						iconId={icon_id}
-						icon={ICONS[icon_id]}
-						wrapperClassName="form_currency-ball"
-					/>
+					<Coin iconId={icon_id} type="CS9" />
 					{titleSection}
 					{(!is_verified || !has_verified_bank_account) && (
 						<Fragment>
@@ -342,6 +309,18 @@ class Index extends Component {
 									{STRINGS['WITHDRAW_NOTE']}
 								</EditWrapper>
 							</div>
+							{customFee ? (
+								<div>
+									<div>
+										Fee:{' '}
+										<span style={{ fontWeight: 'bold' }}>
+											{customFee} {currency?.toUpperCase()}
+										</span>
+									</div>
+								</div>
+							) : (
+								<></>
+							)}
 							{this.renderContent()}
 						</Fragment>
 					)}
@@ -369,7 +348,7 @@ class Index extends Component {
 							banks={banks}
 							coins={coins}
 							currency={currency}
-							data={{ ...data, fee }}
+							data={{ ...data, fee: customFee || fee }}
 							price={currentPrice}
 							onClickAccept={this.onAcceptDialog}
 							onClickCancel={this.onCloseDialog}
@@ -393,6 +372,7 @@ const FiatWithdrawalForm = reduxForm({
 
 const mapStateToProps = (state) => ({
 	data: selector(state, 'bank', 'amount', 'fee', 'captcha'),
+	fiat_fees: state.app.constants.fiat_fees,
 });
 
 export default connect(mapStateToProps)(withRouter(FiatWithdrawalForm));

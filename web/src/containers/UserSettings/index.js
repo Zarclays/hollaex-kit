@@ -29,16 +29,17 @@ import {
 	Loader,
 	TabController,
 	EditWrapper,
+	NotLoggedIn,
 } from 'components';
 import SettingsForm, { generateFormValues } from './SettingsForm';
-import UsernameForm, { generateUsernameFormValues } from './UsernameForm';
+import AccountForm, { generateUsernameFormValues } from './AccountForm';
 import LanguageForm, { generateLanguageFormValues } from './LanguageForm';
 import NotificationForm, {
 	generateNotificationFormValues,
 } from './NotificationForm';
 import AudioCueForm, { generateAudioCueFormValues } from './AudioForm';
 import RiskForm, { generateWarningFormValues } from './RiskForm';
-
+import { isLoggedIn } from 'utils/token';
 import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 
@@ -46,8 +47,6 @@ class UserSettings extends Component {
 	state = {
 		sections: [],
 		tabs: [],
-		dialogIsOpen: false,
-		modalText: '',
 		activeTab: 0,
 	};
 
@@ -86,7 +85,7 @@ class UserSettings extends Component {
 			this.setState({ activeTab: 4 });
 		} else if (
 			window.location.search &&
-			window.location.search.includes('chat')
+			window.location.search.includes('account')
 		) {
 			this.setState({ activeTab: 5 });
 		}
@@ -149,7 +148,7 @@ class UserSettings extends Component {
 		} else if (this.state.activeTab === 4) {
 			currentTab = 'manageRisk';
 		} else if (this.state.activeTab === 5) {
-			currentTab = 'chat';
+			currentTab = 'account';
 		}
 		this.props.router.push(`/settings?${currentTab}`);
 	};
@@ -180,9 +179,15 @@ class UserSettings extends Component {
 		const languageFormValue = generateLanguageFormValues(
 			constants.valid_languages
 		);
-		const notificationFormValues = generateNotificationFormValues();
-		const audioFormValues = generateAudioCueFormValues();
-		const warningFormValues = generateWarningFormValues();
+		const DEFAULT_TOGGLE_OPTIONS = [
+			{ value: true, label: STRINGS['DEFAULT_TOGGLE_OPTIONS.ON'] },
+			{ value: false, label: STRINGS['DEFAULT_TOGGLE_OPTIONS.OFF'] },
+		];
+		const notificationFormValues = generateNotificationFormValues(
+			DEFAULT_TOGGLE_OPTIONS
+		);
+		const audioFormValues = generateAudioCueFormValues(DEFAULT_TOGGLE_OPTIONS);
+		const warningFormValues = generateWarningFormValues(DEFAULT_TOGGLE_OPTIONS);
 
 		let audioFormInitialValues = {
 			all: true,
@@ -341,22 +346,22 @@ class UserSettings extends Component {
 			{
 				title: isMobile ? (
 					<CustomMobileTabs
-						title={STRINGS['USER_SETTINGS.TITLE_CHAT']}
-						icon={ICONS['SETTING_CHAT_ICON']}
+						title={STRINGS['USER_SETTINGS.TITLE_ACCOUNT']}
+						icon={ICONS['ACCOUNT_LINE']}
 					/>
 				) : (
 					// <CustomTabs
-					// 	stringId="USER_SETTINGS.TITLE_CHAT"
-					// 	title={STRINGS['USER_SETTINGS.TITLE_CHAT']}
+					// 	stringId="USER_SETTINGS.TITLE_ACCOUNT"
+					// 	title={STRINGS['USER_SETTINGS.TITLE_ACCOUNT']}
 					// 	iconId="SETTING_CHAT_ICON"
 					// 	icon={ICONS['SETTING_CHAT_ICON']}
 					// />
-					<EditWrapper stringId="USER_SETTINGS.TITLE_CHAT">
-						{STRINGS['USER_SETTINGS.TITLE_CHAT']}
+					<EditWrapper stringId="USER_SETTINGS.TITLE_ACCOUNT">
+						{STRINGS['USER_SETTINGS.TITLE_ACCOUNT']}
 					</EditWrapper>
 				),
 				content: (
-					<UsernameForm
+					<AccountForm
 						onSubmit={this.onSubmitUsername}
 						formFields={usernameFormValues}
 						initialValues={{ username }}
@@ -464,11 +469,18 @@ class UserSettings extends Component {
 	};
 
 	render() {
-		if (this.props.verification_level === 0) {
+		const {
+			icons: ICONS,
+			openContactForm,
+			user: { verification_level },
+		} = this.props;
+
+		if (isLoggedIn() && verification_level === 0) {
 			return <Loader />;
 		}
+
 		const { activeTab, tabs } = this.state;
-		const { icons: ICONS, openContactForm } = this.props;
+
 		return (
 			<div className="presentation_container apply_rtl settings_container">
 				{!isMobile && (
@@ -498,26 +510,29 @@ class UserSettings extends Component {
 						</div>
 					</div>
 				</HeaderSection>
-				{!isMobile ? (
-					<TabController
-						activeTab={activeTab}
-						setActiveTab={this.setActiveTab}
-						tabs={tabs}
-					/>
-				) : (
-					<MobileTabBar
-						activeTab={activeTab}
-						renderContent={this.renderContent}
-						setActiveTab={this.setActiveTab}
-						tabs={tabs}
-					/>
-				)}
-				{!isMobile ? this.renderContent(tabs, activeTab) : null}
-				{isMobile && (
-					<div className="my-4">
-						{/* <Button label={STRINGS["ACCOUNTS.TAB_SIGNOUT"]} onClick={this.logout} /> */}
-					</div>
-				)}
+
+				<NotLoggedIn>
+					{!isMobile ? (
+						<TabController
+							activeTab={activeTab}
+							setActiveTab={this.setActiveTab}
+							tabs={tabs}
+						/>
+					) : (
+						<MobileTabBar
+							activeTab={activeTab}
+							renderContent={this.renderContent}
+							setActiveTab={this.setActiveTab}
+							tabs={tabs}
+						/>
+					)}
+					{!isMobile && this.renderContent(tabs, activeTab)}
+					{isMobile && (
+						<div className="my-4 text-center">
+							{/* <Button label={STRINGS["ACCOUNTS.TAB_SIGNOUT"]} onClick={this.logout} /> */}
+						</div>
+					)}
+				</NotLoggedIn>
 			</div>
 		);
 	}

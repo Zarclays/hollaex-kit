@@ -15,18 +15,23 @@ definitions:
     properties:
       email:
         type: string
+        maxLength: 256
       password:
         type: string
         format: password
         maxLength: 128
       otp_code:
         type: string
+        maxLength: 256
       captcha:
         type: string
+        maxLength: 5000
       referral:
         type: string
+        maxLength: 256
       service:
         type: string
+        maxLength: 256
       long_term:
         type: boolean
   ResetPassword:
@@ -40,6 +45,7 @@ definitions:
         maxLength: 128
       code:
         type: string
+        maxLength: 256
   OperatorResponse:
     type: object
     required:
@@ -200,6 +206,7 @@ definitions:
         properties:
           theme:
             type: string
+            maxLength: 256
           order_book_levels:
             type: number
             format: int32
@@ -272,9 +279,11 @@ definitions:
     properties:
       address:
         type: string
+        maxLength: 256
         description: Destination address
       currency:
         type: string
+        maxLength: 256
         description: currency to be withdrawn (btc, eth, etc)
       amount:
         type: number
@@ -297,6 +306,7 @@ definitions:
     properties:
       code:
         type: string
+        maxLength: 256
   BankArray:
     type: array
     items:
@@ -306,11 +316,13 @@ definitions:
     properties:
       bank_name:
         type: string
+        maxLength: 256
       account_number:
         type: string
         maxLength: 50
       card_number:
         type: string
+        maxLength: 256
   OrderRequest:
     type: object
     required:
@@ -321,6 +333,7 @@ definitions:
     properties:
       symbol:
         type: string
+        maxLength: 256
         description: Currency symbol of the order e.g. btc-eur
       side:
         type: string
@@ -348,6 +361,40 @@ definitions:
         properties:
           post_only:
             type: boolean
+  OrderRequestByAdmin:
+    type: object
+    required:
+      - user_id
+      - side
+      - size
+      - type
+      - symbol
+    properties:
+      user_id:
+        type: number
+        description: User id for the order
+      symbol:
+        type: string
+        maxLength: 256
+        description: Currency symbol of the order e.g. btc-eur
+      side:
+        type: string
+        enum:
+          - buy
+          - sell
+      size:
+        description: "Amount of the orders."
+        type: number
+        format: double
+      type:
+        type: string
+        enum:
+          - market
+          - limit
+      price:
+        type: number
+        format: double
+        description: Price of the order
   OrderResponse:
     type: object
     properties:
@@ -413,13 +460,16 @@ definitions:
             properties:
               site_key:
                 type: string
+                maxLength: 256
           defaults:
             type: object
             properties:
               theme:
                 type: string
+                maxLength: 256
               language:
                 type: string
+                maxLength: 256
               country:
                 type: ['string', 'null']
           color:
@@ -438,20 +488,26 @@ definitions:
             type: object
           description:
             type: string
+            maxLength: 256
           title:
             type: string
+            maxLength: 256
           api_name:
             type: string
+            maxLength: 256
           logo_image:
             type: string
+            maxLength: 256
           valid_languages:
             type: string
+            maxLength: 256
           new_user_is_activated:
             type: boolean
           email_verification_required:
             type: boolean
           native_currency:
             type: string
+            maxLength: 256
           user_meta:
             $ref: "#/definitions/UserMetaObjects"
           injected_html:
@@ -483,11 +539,13 @@ definitions:
             type: array
             items:
               type: string
+              maxLength: 256
           dust:
             type: object
             properties:
               quote:
                 type: string
+                maxLength: 256
               maker_id:
                 type: integer
               spread:
@@ -506,25 +564,31 @@ definitions:
             properties:
               audit:
                 type: string
+                maxLength: 256
               sender:
                 type: string
+                maxLength: 256
               timezone:
                 type: string
+                maxLength: 256
               send_email_to_support:
                 type: boolean
           allowed_domains:
             type: array
             items:
               type: string
+              maxLength: 256
           admin_whitelist:
             type: array
             items:
               type: string
+              maxLength: 256
           security:
             type: object
             properties:
               token_time:
                 type: string
+                maxLength: 256
               withdrawal_token_expiry:
                 type: number
           captcha:
@@ -534,6 +598,7 @@ definitions:
             properties:
               secret_key:
                 type: string
+                maxLength: 256
           smtp:
             type: object
             properties:
@@ -541,10 +606,13 @@ definitions:
                 type: number
               user:
                 type: string
+                maxLength: 256
               server:
                 type: string
+                maxLength: 256
               password:
                 type: string
+                maxLength: 256
   UserMetaObjects:
     type: object
     minProperties: 1
@@ -562,6 +630,7 @@ definitions:
           type: boolean
         description:
           type: string
+          maxLength: 256
   AdminUsersResponse:
     type: object
     properties:
@@ -630,6 +699,7 @@ definitions:
     properties:
       note:
         type: string
+        maxLength: 256
   TradesResponse:
     type: object
     properties:
@@ -782,10 +852,13 @@ definitions:
             format: int32
           name:
             type: string
+            maxLength: 256
           apiKey:
             type: string
+            maxLength: 256
           secret:
             type: string
+            maxLength: 256
           active:
             type: boolean
           revoked:
@@ -813,6 +886,7 @@ definitions:
     properties:
       token:
         type: string
+        maxLength: 256
         description: withdrawal confirmation token
   StatsResponse:
     type: object
@@ -838,8 +912,10 @@ definitions:
         type: number
       currency:
         type: string
+        maxLength: 256
       description:
         type: string
+        maxLength: 256
       amount:
         type: number
         format: double
@@ -857,8 +933,10 @@ definitions:
         type: number
       txid:
         type: string
+        maxLength: 256
       address:
         type: string
+        maxLength: 256
       is_confirmed:
         type: boolean
       user_id:
@@ -870,12 +948,15 @@ definitions:
         format: date-time
       network:
         type: string
+        maxLength: 256
       fee:
         type: number
       fee_coin:
         type: string
+        maxLength: 256
       description:
         type: string
+        maxLength: 256
   ExternalWithdrawalRequest:
     type: object
     required:
@@ -890,8 +971,10 @@ definitions:
         type: number
       txid:
         type: string
+        maxLength: 256
       address:
         type: string
+        maxLength: 256
       is_confirmed:
         type: boolean
       user_id:
@@ -903,10 +986,13 @@ definitions:
         format: date-time
       network:
         type: string
+        maxLength: 256
       fee_coin:
         type: string
+        maxLength: 256
       description:
         type: string
+        maxLength: 256
   OrderbooksResponse:
     type: object
     description: Top 10 orderbooks, where key is the symbol(currency) and the values is an object with the top 10 bids and ask.
@@ -938,12 +1024,16 @@ definitions:
         format: int32
       name:
         type: string
+        maxLength: 256
       icon:
         type: string
+        maxLength: 256
       note:
         type: string
+        maxLength: 256
       description:
         type: string
+        maxLength: 256
       native_currency_limit:
         type: boolean
   PostTierBody:
@@ -953,8 +1043,6 @@ definitions:
       - name
       - icon
       - description
-      - deposit_limit
-      - withdrawal_limit
       - fees
     properties:
       level:
@@ -962,18 +1050,16 @@ definitions:
         format: int32
       name:
         type: string
+        maxLength: 256
       icon:
         type: string
+        maxLength: 256
       description:
         type: string
+        maxLength: 256
       note:
         type: string
-      deposit_limit:
-        type: number
-        format: double
-      withdrawal_limit:
-        type: number
-        format: double
+        maxLength: 256
       fees:
         type: object
         required:
@@ -1004,8 +1090,6 @@ definitions:
       - icon
       - note
       - description
-      - deposit_limit
-      - withdrawal_limit
       - fees
     properties:
       id:
@@ -1013,18 +1097,16 @@ definitions:
         format: int32
       name:
         type: string
+        maxLength: 256
       icon:
         type: string
+        maxLength: 256
       note:
         type: string
+        maxLength: 256
       description:
         type: string
-      deposit_limit:
-        type: number
-        format: double
-      withdrawal_limit:
-        type: number
-        format: double
+        maxLength: 256
       fees:
         type: object
   PairFeesPut:
@@ -1035,6 +1117,7 @@ definitions:
     properties:
       pair:
         type: string
+        maxLength: 256
       fees:
         type: object
         minProperties: 1
@@ -1046,24 +1129,6 @@ definitions:
               type: number
               format: double
             taker:
-              type: number
-              format: double
-  TiersLimitsPut:
-    type: object
-    required:
-      - limits
-    properties:
-      limits:
-        type: object
-        minProperties: 1
-        additionalProperties:
-          type: object
-          minProperties: 1
-          properties:
-            deposit_limit:
-              type: number
-              format: double
-            withdrawal_limit:
               type: number
               format: double
   OraclePriceResponse:
@@ -1090,6 +1155,8 @@ definitions:
         format: double
       transaction_id:
         type: string
+      address:
+        type: string
       status:
         type: boolean
       email:
@@ -1104,10 +1171,13 @@ definitions:
     properties:
       transaction_id:
         type: string
+        maxLength: 256
       updated_transaction_id:
         type: string
+        maxLength: 256
       updated_address:
         type: string
+        maxLength: 256
       status:
         type: boolean
       rejected:
@@ -1122,6 +1192,7 @@ definitions:
         type: boolean
       description:
         type: string
+        maxLength: 256
   CoinPostRequest:
     type: object
     required:
@@ -1130,10 +1201,13 @@ definitions:
     properties:
       symbol:
         type: string
+        maxLength: 256
       code:
         type: string
+        maxLength: 256
       fullname:
         type: string
+        maxLength: 256
       withdrawal_fee:
         type: number
         format: double
@@ -1148,6 +1222,7 @@ definitions:
         format: double
       logo:
         type: string
+        maxLength: 256
       meta:
         type: object
       estimated_price:
@@ -1160,8 +1235,10 @@ definitions:
           - other
       network:
         type: string
+        maxLength: 256
       standard:
         type: string
+        maxLength: 256
       allow_deposit:
         type: boolean
       allow_withdrawal:
@@ -1173,8 +1250,10 @@ definitions:
     properties:
       code:
         type: string
+        maxLength: 256
       fullname:
         type: string
+        maxLength: 256
       withdrawal_fee:
         type: number
         format: double
@@ -1222,12 +1301,16 @@ definitions:
     properties:
       code:
         type: string
+        maxLength: 256
       name:
         type: string
+        maxLength: 256
       pair_base:
         type: string
+        maxLength: 256
       pair_2:
         type: string
+        maxLength: 256
       active:
         type: boolean
       min_size:
@@ -1259,6 +1342,7 @@ definitions:
     properties:
       code:
         type: string
+        maxLength: 256
       min_size:
         type: number
         format: double
@@ -1353,11 +1437,36 @@ definitions:
       increment_price:
         type: number
         format: double
+  TransactionLimit:
+    type: object
+    properties:
+      id:
+        type: ['number', 'null']
+      tier:
+        type: number
+      currency:
+        type: string
+        maxLength: 256
+      limit_currency:
+        type: string
+        maxLength: 256
+      amount:
+        type: number
+        format: double
+      monthly_amount:
+        type: ['number', 'null']
+      withdrawal_fee:
+        type: number
+        format: double
+      type:
+        type: string
+        enum: ['withdrawal', 'deposit']
   BrokerPair:
     type: object
     properties:
       symbol:
         type: string
+        maxLength: 256
       buy_price:
         type: number
       sell_price:
@@ -1374,6 +1483,7 @@ definitions:
         type: number
       type:
         type: string
+        maxLength: 256
       quote_expiry_time:
         type: ['number', 'null']
       rebalancing_symbol:
@@ -1382,11 +1492,7 @@ definitions:
         type: ['object', 'null']
       formula:
         type: ['string', 'null']
-      exchange_name:
-        type: string
       spread:
-        type: number
-      multiplier:
         type: number
   BrokerPairCreate:
     type: object
@@ -1401,6 +1507,7 @@ definitions:
     properties:
       symbol:
         type: string
+        maxLength: 256
       buy_price:
         type: number
       sell_price:
@@ -1417,19 +1524,18 @@ definitions:
         type: number
       type:
         type: string
+        maxLength: 256
       quote_expiry_time:
         type: number
       rebalancing_symbol:
         type: string
+        maxLength: 256
       account:
         type: object
       formula:
         type: string
-      exchange_name:
-        type: string
+        maxLength: 256
       spread:
-        type: number
-      multiplier:
         type: number
   BrokerPairUpdate:
     allOf:
@@ -1447,3 +1553,49 @@ definitions:
     properties:
       id:
         type: integer
+  StakePool:
+    type: object
+    properties:
+      id:
+         type: ['number', 'null']
+      name:
+        type: string
+        maxLength: 256
+      user_id:
+        type: number
+        format: int32
+      currency:
+        type: string
+      reward_currency:
+        type: ['string', 'null']
+      account_id:
+        type: number
+        format: int32
+      apy:
+        type: number
+        format: double
+      duration:
+        type: ['number', 'null']
+      slashing:
+       type: ['boolean', 'null']
+      slashing_earning_percentage:
+        type: number
+        format: int32
+      slashing_principle_percentage:
+        type: number
+        format: int32
+      early_unstake:
+        type: boolean
+      min_amount:
+        type: number
+        format: double
+      max_amount:
+        type: number
+        format: double
+      status:
+        type: string
+        enum: [uninitialized, active, paused, terminated]
+      onboarding:
+        type: ['boolean', 'null']
+      disclaimer:
+        type: ['string', 'null']

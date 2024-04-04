@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import classnames from 'classnames';
 import { isMobile } from 'react-device-detect';
-import { IconTitle, Accordion, MobileBarTabs } from 'components';
+import { IconTitle, Accordion, MobileBarTabs, NotLoggedIn } from 'components';
 import { TransactionsHistory, Stake } from 'containers';
 import { changeSymbol } from 'actions/orderbookAction';
 import {
@@ -22,6 +22,8 @@ import HeaderSection from './HeaderSection';
 import { STATIC_ICONS } from 'config/icons';
 import { isStakingAvailable, STAKING_INDEX_COIN } from 'config/contracts';
 import { assetsSelector, searchAssets } from './utils';
+import ProfitLossSection from './ProfitLossSection';
+import { setPricesAndAsset } from 'actions/assetActions';
 
 const ZERO_BALANCE_KEY = 'isZeroBalanceHidden';
 
@@ -39,6 +41,7 @@ class Wallet extends Component {
 			isOpen: true,
 			isZeroBalanceHidden,
 			showDustSection: false,
+			activeBalanceHistory: false,
 		};
 	}
 
@@ -58,6 +61,11 @@ class Wallet extends Component {
 			this.props.isFetching,
 			this.props.assets
 		);
+		this.props.setPricesAndAsset(this.props.balance, this.props.coins);
+
+		if (this.props.location.pathname === '/wallet/history') {
+			this.setState({ activeBalanceHistory: true });
+		}
 	}
 
 	UNSAFE_componentWillReceiveProps(nextProps) {
@@ -103,11 +111,6 @@ class Wallet extends Component {
 		}
 	}
 
-	componentWillUnmount() {
-		const { isZeroBalanceHidden } = this.state;
-		localStorage.setItem(ZERO_BALANCE_KEY, isZeroBalanceHidden);
-	}
-
 	getMobileSlider = (coins, oraclePrices) => {
 		const result = {};
 		Object.keys(coins).map((key) => {
@@ -122,7 +125,18 @@ class Wallet extends Component {
 	};
 
 	onToggleZeroBalance = (isZeroBalanceHidden) => {
+		localStorage.setItem(ZERO_BALANCE_KEY, isZeroBalanceHidden);
 		this.setState({ isZeroBalanceHidden });
+	};
+
+	handleBalanceHistory = (value) => {
+		this.setState({ activeBalanceHistory: value }, () => {
+			if (value) {
+				this.props.router.push('/wallet/history');
+			} else {
+				this.props.router.push('/wallet');
+			}
+		});
 	};
 
 	generateSections = (
@@ -141,7 +155,7 @@ class Wallet extends Component {
 		assets
 	) => {
 		const { showDustSection, isZeroBalanceHidden, searchValue } = this.state;
-		const { broker, router } = this.props;
+		const { router } = this.props;
 		const { increment_unit, display_name } =
 			coins[BASE_CURRENCY] || DEFAULT_COIN_DATA;
 		const totalAssets = STRINGS.formatString(
@@ -171,11 +185,11 @@ class Wallet extends Component {
 						}
 						loading={isFetching}
 						contracts={contracts}
-						broker={broker}
 						goToDustSection={this.goToDustSection}
 						showDustSection={showDustSection}
 						goToWallet={this.goToWallet}
 						isZeroBalanceHidden={isZeroBalanceHidden}
+						handleBalanceHistory={this.handleBalanceHistory}
 					/>
 				),
 				isOpen: true,
@@ -207,6 +221,7 @@ class Wallet extends Component {
 						navigate={this.goToPage}
 						coins={coins}
 						searchResult={this.getMobileSlider(coins, oraclePrices)}
+						router={this.props.router}
 					/>
 				),
 			},
@@ -288,7 +303,15 @@ class Wallet extends Component {
 							) : (
 								<>
 									<HeaderSection icons={ICONS} />
-									<Accordion sections={sections} showHeader={false} />
+									<NotLoggedIn>
+										{!this.state.activeBalanceHistory ? (
+											<Accordion sections={sections} showHeader={false} />
+										) : (
+											<ProfitLossSection
+												handleBalanceHistory={this.handleBalanceHistory}
+											/>
+										)}
+									</NotLoggedIn>
 								</>
 							)}
 						</div>
@@ -311,12 +334,12 @@ const mapStateToProps = (store) => ({
 	oraclePrices: store.asset.oraclePrices,
 	isFetching: store.asset.isFetching,
 	contracts: store.app.contracts,
-	broker: store.app.broker,
 	assets: assetsSelector(store),
 });
 
 const mapDispatchToProps = (dispatch) => ({
 	changeSymbol: bindActionCreators(changeSymbol, dispatch),
+	setPricesAndAsset: bindActionCreators(setPricesAndAsset, dispatch),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(withConfig(Wallet));

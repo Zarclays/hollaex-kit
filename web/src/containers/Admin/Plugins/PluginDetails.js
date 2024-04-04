@@ -52,8 +52,11 @@ const PluginDetails = ({
 	const [isUpdateLoading, setUpdateLoading] = useState(false);
 
 	const checkactivatedPlugin = (name) => {
-		const data = activatedPluginDetails.filter((item) => item.name === name);
-		return data.length ? true : false;
+		const data =
+			activatedPluginDetails &&
+			typeof activatedPluginDetails === 'object' &&
+			activatedPluginDetails?.filter((item) => item?.name === name);
+		return data?.length ? true : false;
 	};
 	const onHandlePluginActivate = async () => {
 		getPluginActivateDetails({ name: selectedPlugin.name })
@@ -68,7 +71,7 @@ const PluginDetails = ({
 				}
 			})
 			.catch((err) => {
-				throw err;
+				message.error('Error');
 			});
 	};
 	const handleAddPlugin = async () => {
@@ -251,15 +254,17 @@ const PluginDetails = ({
 								</div>
 								<p className="tooltip-container">
 									Author:
-									<Tooltip
-										placement="rightBottom"
-										title={`Verified plugin by ${author}`}
-									>
-										<ReactSVG
-											src={STATIC_ICONS['VERIFIED_BADGE_PLUGIN_APPS']}
-											className="verified-icon"
-										/>
-									</Tooltip>{' '}
+									{author === 'HollaEx' ? (
+										<Tooltip
+											placement="rightBottom"
+											title={`Verified plugin by ${author}`}
+										>
+											<ReactSVG
+												src={STATIC_ICONS['VERIFIED_BADGE_PLUGIN_APPS']}
+												className="verified-icon"
+											/>
+										</Tooltip>
+									) : null}{' '}
 									{pluginData.author}
 								</p>
 								<p>
@@ -298,7 +303,7 @@ const PluginDetails = ({
 										))}
 									</div>
 								) : null}
-								{pluginData.price && (
+								{
 									<div>
 										<p>Price: </p>{' '}
 										<h6>
@@ -308,7 +313,7 @@ const PluginDetails = ({
 												: `$ ${pluginData.price}`}
 										</h6>
 									</div>
-								)}
+								}
 							</div>
 						</div>
 					</div>
@@ -346,7 +351,8 @@ const PluginDetails = ({
 											{selectedPlugin.version}
 										</div>
 										<div className="my-2 d-flex">
-											<b>Newest version:</b> {pluginData.version}
+											<b className="mr-2">Newest version:</b>
+											{selectedNetworkPlugin.version}
 										</div>
 									</div>
 								) : (
@@ -417,7 +423,7 @@ const PluginDetails = ({
 					{selectedPlugin.url && (
 						<div className="text-align-center">
 							<a
-								href={selectedPlugin.url}
+								href={selectedPlugin.documentation}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="underline-text pointer"
@@ -448,7 +454,7 @@ const PluginDetails = ({
 			);
 		} else {
 			let btnDisabled = false;
-			if (payment_type === 'free' || checkactivatedPlugin(name)) {
+			if (checkactivatedPlugin(name)) {
 				return (
 					<div className="btn-wrapper">
 						<Button
@@ -464,10 +470,11 @@ const PluginDetails = ({
 					</div>
 				);
 			} else if (
-				!checkactivatedPlugin(name) &&
-				(payment_type?.toLowerCase() === 'activation' ||
-					free_for?.includes(exchange.plan) ||
-					only_for?.includes(exchange.plan))
+				(!checkactivatedPlugin(name) &&
+					(payment_type?.toLowerCase() === 'activation' ||
+						free_for?.includes(exchange.plan) ||
+						only_for?.includes(exchange.plan))) ||
+				payment_type === 'free'
 			) {
 				// btnDisabled = payment_type?.toLowerCase() === 'activation';
 				return (
@@ -553,13 +560,14 @@ const PluginDetails = ({
 	const {
 		icon,
 		name,
-		description,
 		author,
 		payment_type,
 		price,
 		version,
 		free_for,
 		only_for,
+		url,
+		bio
 	} = pluginData;
 
 	let isPriceTagHide = true;
@@ -595,7 +603,7 @@ const PluginDetails = ({
 										{' '}
 										<h4>{name}</h4> <h5> {`Version: ${version}`}</h5>{' '}
 									</div>
-									<p>{`Description: ${description}`}</p>
+									<p>{`Bio: ${bio}`}</p>
 									<div>
 										{' '}
 										{!!free_for?.length ? (
@@ -616,16 +624,21 @@ const PluginDetails = ({
 									</div>
 									<p className="tooltip-container">
 										Author:
-										<Tooltip
-											placement="rightBottom"
-											title={`Verified plugin by ${author}`}
-										>
-											<ReactSVG
-												src={STATIC_ICONS['VERIFIED_BADGE_PLUGIN_APPS']}
-												className="verified-icon"
-											/>
-										</Tooltip>{' '}
+										{author === 'HollaEx' ? (
+											<Tooltip
+												placement="rightBottom"
+												title={`Verified plugin by ${author}`}
+											>
+												<ReactSVG
+													src={STATIC_ICONS['VERIFIED_BADGE_PLUGIN_APPS']}
+													className="verified-icon"
+												/>
+											</Tooltip>
+										) : null}{' '}
 										{author}
+									</p>
+									<p className="tooltip-container">
+										<a href={url} className="underline-text pointer">Website</a>
 									</p>
 									{free_for?.length ? (
 										<div>
@@ -689,13 +702,9 @@ const PluginDetails = ({
 			<div className="plugin-details-wrapper">
 				<div>
 					<div>
-						<div className="about-label">About</div>
+						<div className="about-label">Description</div>
 						<div className="about-contents">
-							<b>OverView</b>
 							<div className="my-3">{pluginData.description}</div>
-							<div className="my-5">
-								<h2>Main features</h2>
-							</div>
 						</div>
 					</div>
 				</div>

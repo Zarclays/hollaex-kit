@@ -12,6 +12,8 @@ import { getValidLanguages } from 'utils/initialize';
 import { generateGlobalId } from 'utils/id';
 import LANGUAGES from 'config/languages';
 import { stringToHTML } from 'utils/script';
+import store from '../store';
+import { overwriteCurrencyNames } from 'actions/appActions';
 export { formatBtcAmount, formatBaseAmount, formatEthAmount } from './currency';
 
 export const getFormattedDate = (value) => {
@@ -103,6 +105,7 @@ export const setContent = (content) => {
 	const language = getLanguage();
 	STRINGS.setContent(content);
 	STRINGS.setLanguage(language);
+	store.dispatch(overwriteCurrencyNames());
 };
 
 export const overwriteLocale = (key = DEFAULT_LANGUAGE, overwrites = {}) => {
@@ -197,7 +200,6 @@ export const filterOverwrites = (overwrites) => {
 };
 
 const EXCLUSIONS = [
-	'FOOTER.FOOTER_LEGAL',
 	'LEGAL.PRIVACY_POLICY.TEXTS',
 	'LEGAL.GENERAL_TERMS.TEXTS',
 	'TYPES',

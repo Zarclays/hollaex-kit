@@ -1,17 +1,14 @@
 import math from 'mathjs';
 import { createSelector } from 'reselect';
 import { DIGITAL_ASSETS_SORT } from 'actions/appActions';
-import {
-	unsortedMarketsSelector,
-	getPairs,
-	getKitInfo,
-	getFavourites,
-} from 'containers/Trade/utils';
-import { handleUpgrade } from 'utils/utils';
-import { pinnedAssetsSelector } from 'containers/Wallet/utils';
+import { unsortedMarketsSelector, getPairs } from 'containers/Trade/utils';
+import { getPinnedAssets } from 'containers/Wallet/utils';
 
 const getSortMode = (state) => state.app.digital_assets_sort.mode;
 const getSortDir = (state) => state.app.digital_assets_sort.is_descending;
+const getSelectedSource = (_, props) => props.selectedSource;
+const getQuickTrade = (state) => state.app.quicktrade;
+const getCoins = (state) => state.app.coins;
 
 const getSortFunction = (mode) => {
 	switch (mode) {
@@ -30,24 +27,27 @@ const sortedMarketsSelector = createSelector(
 );
 
 const pinnedMarketsSelector = createSelector(
-	[getPairs, getKitInfo, pinnedAssetsSelector],
-	(pairs, info, pinnedAssets) => {
-		const isBasic = handleUpgrade(info);
-
-		const pinnedCoins = isBasic ? ['xht'] : pinnedAssets;
+	[getPairs, getPinnedAssets],
+	(pairs, pinnedAssets) => {
 		const pinnedMarkets = [];
-		Object.entries(pairs).forEach(([key, { pair_base, pair_2 }]) => {
-			if (pinnedCoins.includes(pair_base) || pinnedCoins.includes(pair_2)) {
-				pinnedMarkets.push(key);
+
+		pinnedAssets.forEach((pin) => {
+			for (const key in pairs) {
+				const { pair_base } = pairs[key];
+				if (pin === pair_base) {
+					pinnedMarkets.push(key);
+					break;
+				}
 			}
 		});
+
 		return pinnedMarkets;
 	}
 );
 
 export const MarketsSelector = createSelector(
-	[sortedMarketsSelector, getPairs, getFavourites, pinnedMarketsSelector],
-	(markets, pairs, favourites, pins = []) => {
+	[sortedMarketsSelector, pinnedMarketsSelector],
+	(markets, pins = []) => {
 		const pinnedMarkets = [];
 		const restMarkets = markets.filter(({ key }) => !pins.includes(key));
 
@@ -59,5 +59,91 @@ export const MarketsSelector = createSelector(
 		});
 
 		return [...pinnedMarkets, ...restMarkets];
+	}
+);
+
+export const dataSelector = createSelector(
+	[getSelectedSource, MarketsSelector, getPairs, getQuickTrade, getCoins],
+	(selectedSource, markets, pairs, quicktrade, coins) => {
+		const data = {};
+
+		if (!selectedSource || selectedSource === 'all') {
+			markets.forEach((market) => {
+				const [coinKey] = market.key.split('-');
+
+				if (!Object.keys(data).includes(coinKey)) {
+					data[coinKey] = { ...market, pairBase: coins[coinKey] };
+				}
+			});
+
+			quicktrade
+				.filter(({ active, type }) => !!active && type !== 'pro')
+				.forEach(({ symbol, type }) => {
+					const [coinKey, sourceKey] = symbol.split('-');
+					if (!Object.keys(data).includes(coinKey)) {
+						data[coinKey] = {
+							key: symbol,
+							symbol: coinKey,
+							sourceType: type,
+							ticker: {},
+							pairTwo: coins[sourceKey],
+							pairBase: coins[coinKey],
+							...coins[coinKey],
+						};
+					}
+				});
+		} else if (selectedSource === 'pro') {
+			markets.forEach((market) => {
+				const [coinKey] = market.key.split('-');
+
+				if (!Object.keys(data).includes(coinKey)) {
+					data[coinKey] = { ...market, pairBase: coins[coinKey] };
+				}
+			});
+		} else if (selectedSource === 'network') {
+			quicktrade
+				.filter(({ active, type }) => !!active && type === 'network')
+				.forEach(({ symbol, type }) => {
+					const [coinKey, sourceKey] = symbol.split('-');
+					if (!Object.keys(data).includes(coinKey)) {
+						data[coinKey] = {
+							key: symbol,
+							symbol: coinKey,
+							sourceType: type,
+							ticker: {},
+							pairTwo: coins[sourceKey],
+							pairBase: coins[coinKey],
+							...coins[coinKey],
+						};
+					}
+				});
+		} else if (selectedSource === 'broker') {
+			quicktrade
+				.filter(({ active, type }) => !!active && type === 'broker')
+				.forEach(({ symbol, type }) => {
+					const [coinKey, sourceKey] = symbol.split('-');
+					if (!Object.keys(data).includes(coinKey)) {
+						data[coinKey] = {
+							key: symbol,
+							symbol: coinKey,
+							sourceType: type,
+							ticker: {},
+							pairTwo: coins[sourceKey],
+							pairBase: coins[coinKey],
+							...coins[coinKey],
+						};
+					}
+				});
+		} else {
+			markets.forEach((market) => {
+				const [coinKey, sourceKey] = market.key.split('-');
+
+				if (sourceKey === selectedSource) {
+					data[coinKey] = market;
+				}
+			});
+		}
+
+		return Object.values(data);
 	}
 );

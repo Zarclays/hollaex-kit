@@ -270,21 +270,27 @@ class StakeDetails extends Component {
 
 		const __html = `.stake-panel-bg:before { background-image: url(${ICONS['STAKING_PANEL_BACKGROUND']}) }`;
 
+		// ToDo: icon title to currency icon
+
 		return (
 			<Fragment>
 				<style dangerouslySetInnerHTML={{ __html }} />
-				<div className="stake-details presentation_container apply_rtl wallet-wrapper">
+				<div className="presentation_container apply_rtl wallet-wrapper">
 					<div className="d-flex align-end justify-content-between">
 						<div>
 							<IconTitle
-								text={STRINGS.formatString(
-									STRINGS['STAKE_DETAILS.TOKEN'],
-									fullname
-								)}
+								text={
+									<div>
+										{STRINGS.formatString(
+											STRINGS['STAKE_DETAILS.TOKEN'],
+											fullname
+										)}
+									</div>
+								}
 								iconPath={ICONS[icon_id]}
 								iconId={icon_id}
 								textType="title"
-								imageWrapperClassName="currency-ball pt-2"
+								imageWrapperClassName="currency-ball"
 							/>
 							<div>
 								{STRINGS.formatString(

@@ -32,6 +32,9 @@ import {
 	AppDetails,
 	// ADMIN
 	User,
+	AdminStake,
+	Audits,
+	Session,
 	AppWrapper as AdminContainer,
 	// Main,
 	// DepositsPage,
@@ -71,7 +74,7 @@ import { Billing } from 'containers/Admin';
 import store from './store';
 import { verifyToken } from './actions/authAction';
 import { setLanguage } from './actions/appActions';
-import { SmartTarget } from 'components';
+import { SmartTarget, NotLoggedIn } from 'components';
 
 import {
 	isLoggedIn,
@@ -79,6 +82,7 @@ import {
 	removeToken,
 	getTokenTimestamp,
 	isAdmin,
+	checkRole,
 } from './utils/token';
 import {
 	getLanguage,
@@ -194,9 +198,12 @@ function loggedIn(nextState, replace) {
 
 const checkStaking = (nextState, replace) => {
 	const {
-		app: { contracts },
+		app: { contracts, features },
 	} = store.getState();
-	if (!isStakingAvailable(STAKING_INDEX_COIN, contracts)) {
+	if (
+		!features.cefi_stake &&
+		!isStakingAvailable(STAKING_INDEX_COIN, contracts)
+	) {
 		replace({
 			pathname: '/account',
 		});
@@ -245,6 +252,17 @@ const noLoggedUserCommonProps = {
 
 function withAdminProps(Component, key) {
 	let adminProps = {};
+	let restrictedPaths = [
+		'general',
+		'financials',
+		'trade',
+		'plugins',
+		'tiers',
+		'roles',
+		'billing',
+		'fiat',
+	];
+
 	PATHS.map((data) => {
 		const { pathProps = {}, routeKey, ...rest } = data;
 		if (routeKey === key) {
@@ -253,26 +271,49 @@ function withAdminProps(Component, key) {
 		return 0;
 	});
 	return function (matchProps) {
-		return <Component {...adminProps} {...matchProps} />;
+		if (
+			checkRole() !== 'admin' &&
+			restrictedPaths.includes(key) &&
+			!(checkRole() === 'supervisor' && key === 'financials')
+		) {
+			return <NotFound {...matchProps} />;
+		} else {
+			return <Component {...adminProps} {...matchProps} />;
+		}
 	};
 }
 
 function generateRemoteRoutes(remoteRoutes) {
+	const privateRouteProps = { onEnter: requireAuth };
+
 	return (
 		<Fragment>
-			{remoteRoutes.map(({ path, name, target }, index) => (
-				<Route
-					key={`${name}_remote-route_${index}`}
-					path={path}
-					name={name}
-					component={() => (
-						<div>
-							<SmartTarget id={target} />
-						</div>
-					)}
-					onEnter={requireAuth}
-				/>
-			))}
+			{remoteRoutes.map(
+				({ path, name, target, is_public, token_required }, index) => (
+					<Route
+						key={`${name}_remote-route_${index}`}
+						path={path}
+						name={name}
+						component={() => {
+							const Wrapper = token_required ? NotLoggedIn : Fragment;
+							const props = token_required
+								? {
+										wrapperClassName:
+											'pt-4 presentation_container apply_rtl settings_container',
+								  }
+								: {};
+							return (
+								<div>
+									<Wrapper {...props}>
+										<SmartTarget id={target} />
+									</Wrapper>
+								</div>
+							);
+						}}
+						{...(!is_public && privateRouteProps)}
+					/>
+				)
+			)}
 		</Fragment>
 	);
 }
@@ -328,65 +369,40 @@ export const generateRoutes = (routes = []) => {
 					name="Reset Password Request"
 					component={ConfirmChangePassword}
 				/>
-				<Route
-					path="account"
-					name="Account"
-					component={Account}
-					onEnter={requireAuth}
-				/>
+				<Route path="account" name="Account" component={Account} />
 				<Route
 					path="account/settings/username"
 					name="username"
 					component={Account}
 				/>
-				<Route
-					path="security"
-					name="Security"
-					component={Account}
-					onEnter={requireAuth}
-				/>
+				<Route path="security" name="Security" component={Account} />
 				<Route
 					path="developers"
 					name="Developers"
 					component={Account}
 					onEnter={requireAuth}
 				/>
-				<Route
-					path="settings"
-					name="Settings"
-					component={Account}
-					onEnter={requireAuth}
-				/>
-				<Route path="apps" name="Apps" component={Apps} onEnter={requireAuth} />
+				<Route path="settings" name="Settings" component={Account} />
+				<Route path="apps" name="Apps" component={Apps} />
 				<Route
 					path="apps/details/:app"
 					name="AppDetails"
 					component={AppDetails}
 					onEnter={requireAuth}
 				/>
-				<Route
-					path="summary"
-					name="Summary"
-					component={Account}
-					onEnter={requireAuth}
-				/>
+				<Route path="summary" name="Summary" component={Account} />
 				<Route
 					path="fees-and-limits"
 					name="Fees and limits"
 					component={FeesAndLimits}
-					onEnter={requireAuth}
 				/>
 				<Route path="assets" name="Digital Asset" component={DigitalAssets} />
 				<Route path="white-label" name="WhiteLabel" component={WhiteLabel} />
+				<Route path="verification" name="Verification" component={Account} />
+				<Route path="wallet" name="Wallet" component={MainWallet} />
 				<Route
-					path="verification"
-					name="Verification"
-					component={Account}
-					onEnter={requireAuth}
-				/>
-				<Route
-					path="wallet"
-					name="Wallet"
+					path="wallet/history"
+					name="Wallet History"
 					component={MainWallet}
 					onEnter={requireAuth}
 				/>
@@ -412,10 +428,11 @@ export const generateRoutes = (routes = []) => {
 					path="transactions"
 					name="Transactions"
 					component={TransactionsHistory}
-					onEnter={requireAuth}
 				/>
 				<Route path="trade/:pair" name="Trade" component={Trade} />
+				<Route path="trade" name="Trade Tabs" component={AddTradeTabs} />
 				<Route path="markets" name="Trade Tabs" component={AddTradeTabs} />
+				<Route path="quick-trade" name="Quick Trade" component={QuickTrade} />
 				<Route
 					path="quick-trade/:pair"
 					name="Quick Trade"
@@ -473,6 +490,21 @@ export const generateRoutes = (routes = []) => {
 					path="/admin/user"
 					name="Admin User"
 					component={withAdminProps(User, 'user')}
+				/>
+				<Route
+					path="/admin/audits"
+					name="Admin Audits"
+					component={withAdminProps(Audits, 'audit')}
+				/>
+				<Route
+					path="/admin/stakes"
+					name="Admin Stakes"
+					component={withAdminProps(AdminStake, 'stake')}
+				/>
+				<Route
+					path="/admin/sessions"
+					name="Admin Session"
+					component={withAdminProps(Session, 'session')}
 				/>
 				<Route
 					path="/admin/financials"

@@ -1,8 +1,9 @@
 import React from 'react';
 import { EditWrapper } from 'components';
 import STRINGS from 'config/localizedStrings';
+import { Link } from 'react-router';
 
-const Footer = ({ brokerUsed, name }) => {
+const Footer = ({ brokerUsed, name, isNetwork, pair }) => {
 	return (
 		<div className="footer-text">
 			<EditWrapper stringId="QUICK_TRADE_COMPONENT.FOOTER_TEXT">
@@ -13,9 +14,17 @@ const Footer = ({ brokerUsed, name }) => {
 					{STRINGS['QUICK_TRADE_COMPONENT.FOOTER_TEXT_1']}
 				</EditWrapper>
 				:{' '}
-				{!brokerUsed ? (
+				{isNetwork ? (
 					<span>
-						<span>{name} </span>
+						<EditWrapper stringId="QUICK_TRADE_COMPONENT.SOURCE_TEXT">
+							{STRINGS['QUICK_TRADE_COMPONENT.SOURCE_TEXT_NETWORK']}
+						</EditWrapper>
+					</span>
+				) : !brokerUsed ? (
+					<span>
+						<Link to={`/trade/${pair}`}>
+							<span className='blue-link pointer underline-text mr-2'>{name}</span>
+						</Link>
 						<span>
 							<EditWrapper stringId="TYPES_VALUES.market">
 								{STRINGS['TYPES_VALUES.market']}

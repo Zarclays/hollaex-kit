@@ -1,41 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router';
 import { connect } from 'react-redux';
-import { Select } from 'antd';
+import { isMobile } from 'react-device-detect';
 
-import { unique } from 'utils/data';
 import withConfig from 'components/ConfigProvider/withConfig';
-import Markets from './components/AssetsWrapper';
-import { MarketsSelector } from './components/utils';
+import AssetsWrapper from './components/AssetsWrapper';
 import { EditWrapper, IconTitle } from 'components';
 import STRINGS from 'config/localizedStrings';
 
-const DigitalAssets = ({
-	router,
-	pair,
-	markets,
-	icons: ICONS,
-	showQuickTrade,
-}) => {
-	const DEFAULT_OPTIONS = [{ value: 'all', label: STRINGS['ALL'] }];
-	const [options, setOptions] = useState(DEFAULT_OPTIONS);
-	const [selectedSource, setSelectedSource] = useState('');
-
-	useEffect(() => {
-		handleOptions();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
-
-	const handleOptions = () => {
-		const options = unique(
-			markets.map(({ pairTwo: { symbol } }) => symbol)
-		).map((symbol) => ({ value: symbol, label: symbol }));
-		setOptions([...DEFAULT_OPTIONS, ...options]);
-	};
-
+const DigitalAssets = ({ pair, icons: ICONS, showQuickTrade }) => {
 	return (
 		<div className="digital-market-wrapper">
-			<div className="market-wrapper">
+			<div
+				className={
+					isMobile
+						? 'market-wrapper market-wrapper-mobile-view'
+						: 'market-wrapper'
+				}
+			>
 				<div className="header-container">
 					<div className="d-flex">
 						<IconTitle
@@ -46,11 +28,6 @@ const DigitalAssets = ({
 							iconId="ASSET_INFO_COIN"
 							textType="title"
 						/>
-					</div>
-					<div className="link-content" onClick={router.goBack}>
-						<EditWrapper stringId="DIGITAL_ASSETS.GO_BACK">
-							&lt; {STRINGS['DIGITAL_ASSETS.GO_BACK']}
-						</EditWrapper>
 					</div>
 				</div>
 				<div className="d-flex justify-content-between mb-3">
@@ -75,8 +52,8 @@ const DigitalAssets = ({
 							</Link>
 						)}
 						<Link className="link-2" to="/markets">
-							<EditWrapper stringId="DIGITAL_ASSETS.MARKETS">
-								{STRINGS['DIGITAL_ASSETS.MARKETS']}
+							<EditWrapper stringId="DIGITAL_ASSETS.PRO_TRADE">
+								{STRINGS['DIGITAL_ASSETS.PRO_TRADE']}
 							</EditWrapper>
 						</Link>
 						<Link className="link-3" to="/wallet">
@@ -86,23 +63,7 @@ const DigitalAssets = ({
 						</Link>
 					</div>
 				</div>
-				<div className="mb-4">
-					<div className="secondary-text">
-						<EditWrapper stringId="DIGITAL_ASSETS.PRICE_SOURCE">
-							{STRINGS['DIGITAL_ASSETS.PRICE_SOURCE']}:
-						</EditWrapper>
-					</div>
-					<Select
-						defaultValue={options[0]?.value}
-						style={{ width: '20rem' }}
-						className="coin-select custom-select-input-style elevated"
-						dropdownClassName="custom-select-style"
-						placeholder=""
-						onChange={setSelectedSource}
-						options={options}
-					/>
-				</div>
-				<Markets selectedSource={selectedSource} />
+				<AssetsWrapper />
 			</div>
 		</div>
 	);
@@ -111,8 +72,7 @@ const DigitalAssets = ({
 const mapStateToProps = (state) => {
 	return {
 		pair: state.app.pair,
-		markets: MarketsSelector(state),
-    showQuickTrade: state.app.constants.features.quick_trade,
+		showQuickTrade: state.app.constants.features.quick_trade,
 	};
 };
 

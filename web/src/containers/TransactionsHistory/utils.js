@@ -10,7 +10,7 @@ import mathjs from 'mathjs';
 import { isMobile } from 'react-device-detect';
 
 import STRINGS from 'config/localizedStrings';
-import { Image } from 'components';
+import { Coin, EditWrapper } from 'components';
 import {
 	EXPLORERS_ENDPOINT,
 	BASE_CURRENCY,
@@ -104,13 +104,8 @@ export const generateOrderHistoryHeaders = (
 				return (
 					<td key={index} className="text-uppercase sticky-col">
 						<div className="d-flex align-items-center">
-							<Image
-								iconId={icon_id}
-								icon={ICONS[icon_id]}
-								wrapperClassName="currency-ball"
-								imageWrapperClassName="currency-ball-image-wrapper"
-							/>
-							<div>{display_name}</div>
+							<Coin iconId={icon_id} />
+							<div className="px-2">{display_name}</div>
 						</div>
 					</td>
 				);
@@ -433,13 +428,8 @@ export const generateTradeHeaders = (
 				return (
 					<td key={index} className="text-uppercase sticky-col">
 						<div className="d-flex align-items-center">
-							<Image
-								iconId={icon_id}
-								icon={ICONS[icon_id]}
-								wrapperClassName="currency-ball"
-								imageWrapperClassName="currency-ball-image-wrapper"
-							/>
-							<div>{display_name}</div>
+							<Coin iconId={icon_id} />
+							<div className="px-2">{display_name}</div>
 						</div>
 					</td>
 				);
@@ -697,13 +687,8 @@ export const generateWithdrawalsHeaders = (
 				return (
 					<td key={index} className="coin-cell sticky-col">
 						<div className="d-flex align-items-center">
-							<Image
-								iconId={icon_id}
-								icon={ICONS[icon_id]}
-								wrapperClassName="coin-icons"
-								imageWrapperClassName="currency-ball-image-wrapper"
-							/>
-							{data.fullname}
+							<Coin iconId={icon_id} />
+							<div className="px-2">{data.fullname}</div>
 						</div>
 					</td>
 				);
@@ -790,6 +775,34 @@ export const generateWithdrawalsHeaders = (
 			},
 		},
 		{
+			stringId: 'category',
+			label: STRINGS['CATEGORY'],
+			key: 'category',
+			renderCell: (data, value, index) => {
+				return !data.category ? (
+					<td key={index}>{'-'}</td>
+				) : (
+					<EditWrapper>
+						<td className="category-label" key={index}>
+							{STRINGS[`TRANSACTION_HISTORY.${data.category.toUpperCase()}`]}
+						</td>
+					</EditWrapper>
+				);
+			},
+		},
+		{
+			stringId: 'network',
+			label: STRINGS['NETWORK'],
+			key: 'network',
+			renderCell: (data, value, index) => {
+				return !data.network ? (
+					<td key={index}>{'-'}</td>
+				) : (
+					<td key={index}>{data.network.toUpperCase()}</td>
+				);
+			},
+		},
+		{
 			stringId: 'MORE,CANCEL,VIEW',
 			label: STRINGS['MORE'],
 			key: 'transaction_id',
@@ -855,7 +868,7 @@ export const generateWithdrawalsHeaders = (
 				} else {
 					// Completed Status
 					// return isBlockchainTx(transaction_id) &&
-					return network ? (
+					return network && EXPLORERS_ENDPOINT(network).length > 0 ? (
 						// currency !== BASE_CURRENCY ? (
 						<td key={index}>
 							<a

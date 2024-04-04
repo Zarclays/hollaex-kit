@@ -41,6 +41,7 @@ import {
 	SET_RECENT_TRADES_MARKETS,
 	SET_TRADE_TAB,
 	SET_BROKER,
+	SET_QUICKTRADE,
 	SORT,
 	SET_SORT_MODE,
 	TOGGLE_SORT,
@@ -55,6 +56,8 @@ import {
 	SET_ADMIN_DIGITAL_ASSETS_SORT,
 	SELECTED_PLUGIN,
 	SET_EXPLORE_PLUGINS,
+	OVERWRITE_CURRENCY_NAMES,
+	SET_TRANSACTION_LIMITS,
 } from 'actions/appActions';
 import { THEME_DEFAULT } from 'config/constants';
 import { getLanguage } from 'utils/string';
@@ -71,6 +74,8 @@ import {
 	modifyCoinsData,
 	modifyPairsData,
 	modifyBrokerData,
+	modifyQuickTradeData,
+	overWriteCoinNames,
 } from 'utils/reducer';
 
 const EMPTY_NOTIFICATION = {
@@ -108,68 +113,7 @@ const INITIAL_STATE = {
 	recentTradesMarket: '',
 	tickers: {},
 	orderLimits: {},
-	coins: {
-		bch: {
-			id: 4,
-			fullname: 'Bitcoin Cash',
-			symbol: 'bch',
-			active: true,
-			allow_deposit: true,
-			allow_withdrawal: true,
-			withdrawal_fee: 0.0001,
-			min: 0.0001,
-			max: 100000,
-			increment_unit: 0.001,
-		},
-		xrp: {
-			id: 5,
-			fullname: 'Ripple',
-			symbol: 'xrp',
-			active: true,
-			allow_deposit: true,
-			allow_withdrawal: true,
-			withdrawal_fee: 0.0001,
-			min: 0.0001,
-			max: 100000,
-			increment_unit: 0.001,
-		},
-		eur: {
-			id: 1,
-			fullname: 'Euro',
-			symbol: 'eur',
-			active: true,
-			allow_deposit: true,
-			allow_withdrawal: true,
-			withdrawal_fee: 0.0001,
-			min: 0.0001,
-			max: 100000,
-			increment_unit: 0.0001,
-		},
-		btc: {
-			id: 2,
-			fullname: 'Bitcoin',
-			symbol: 'btc',
-			active: true,
-			allow_deposit: true,
-			allow_withdrawal: true,
-			withdrawal_fee: 0.0001,
-			min: 0.0001,
-			max: 100000,
-			increment_unit: 0.0001,
-		},
-		eth: {
-			id: 3,
-			fullname: 'Ethereum',
-			symbol: 'eth',
-			active: true,
-			allow_deposit: true,
-			allow_withdrawal: true,
-			withdrawal_fee: 0.0001,
-			min: 0.0001,
-			max: 100000,
-			increment_unit: 0.001,
-		},
-	},
+	coins: {},
 	constants: {},
 	config_level: {},
 	info: { is_trial: false, active: true, status: true },
@@ -195,6 +139,7 @@ const INITIAL_STATE = {
 	allContracts: {},
 	tradeTab: 0,
 	broker: {},
+	quicktrade: [],
 	user_payments: {},
 	onramp: [],
 	offramp: {},
@@ -251,6 +196,11 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 				...state,
 				coins: modifyCoinsData(payload.coins),
 			};
+		case OVERWRITE_CURRENCY_NAMES:
+			return {
+				...state,
+				coins: overWriteCoinNames(state.coins),
+			};
 		case SET_USER_PAYMENTS:
 			return {
 				...state,
@@ -270,6 +220,18 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 			return {
 				...state,
 				broker: modifyBrokerData(payload.broker, { ...state.coins }),
+			};
+		case SET_TRANSACTION_LIMITS:
+			return {
+				...state,
+				transaction_limits: payload.transaction_limits,
+			};
+		case SET_QUICKTRADE:
+			return {
+				...state,
+				quicktrade: modifyQuickTradeData(payload.quicktrade, {
+					...state.coins,
+				}),
 			};
 		case SET_NOTIFICATION: {
 			const newNotification =
@@ -518,11 +480,12 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 			const remoteRoutes = [];
 			allWebViews.forEach(({ meta, name }) => {
 				if (meta && meta.is_page) {
-					const { icon, string, ...rest } = meta;
+					const { icon, string, path, ...rest } = meta;
 					remoteRoutes.push({
-						target: generateDynamicTarget(name, 'page'),
+						target: generateDynamicTarget(name, 'page', path),
 						icon_id: globalize(name)(icon),
 						string_id: globalize(name)(string),
+						path,
 						...rest,
 					});
 				}
@@ -554,12 +517,13 @@ const reducer = (state = INITIAL_STATE, { type, payload = {} }) => {
 						is_app,
 						type,
 						currency,
+						path,
 					} = meta;
 
 					if (is_app) {
 						target = generateDynamicTarget(name, 'app', type);
 					} else if (is_page) {
-						target = generateDynamicTarget(name, 'page');
+						target = generateDynamicTarget(name, 'page', path);
 					} else if (is_verification_tab && type) {
 						target = generateDynamicTarget(name, 'verification', type);
 					} else if (is_wallet && type && currency) {
